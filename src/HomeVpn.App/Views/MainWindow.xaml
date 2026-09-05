@@ -1,184 +1,36 @@
-<Window x:Class="HomeVpn.Views.MainWindow"
-        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Home VPN"
-        Width="820" Height="760"
-        MinWidth="720" MinHeight="680"
-        WindowStartupLocation="CenterScreen"
-        Background="{StaticResource AppBackground}">
-    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-        <Grid Margin="24">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-            </Grid.RowDefinitions>
-
-            <!-- Hero -->
-            <Border Grid.Row="0" Background="{StaticResource CardBrush}" CornerRadius="22" Padding="30" Margin="0,0,0,16">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="125"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
-
-                    <Grid Width="110" Height="110" HorizontalAlignment="Left" VerticalAlignment="Center">
-                        <Border Width="100" Height="100" CornerRadius="50" Background="{StaticResource GreenSoftBrush}" HorizontalAlignment="Left" VerticalAlignment="Top">
-                            <Viewbox Margin="24">
-                                <Canvas Width="64" Height="64">
-                                    <Path Stroke="{StaticResource GreenBrush}" StrokeThickness="4" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
-                                          Data="M 8,31 L 32,10 L 56,31 M 15,28 L 15,55 L 49,55 L 49,28 M 27,55 L 27,40 L 37,40 L 37,55"/>
-                                </Canvas>
-                            </Viewbox>
-                        </Border>
-                        <Border x:Name="StatusBadge" Width="34" Height="34" CornerRadius="17" Background="{StaticResource RedBrush}"
-                                HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,4,4" BorderBrush="White" BorderThickness="3">
-                            <TextBlock x:Name="StatusBadgeText" Text="×" Foreground="White" FontSize="20" FontWeight="Bold"
-                                       HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,-2,0,0"/>
-                        </Border>
-                    </Grid>
-
-                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="18,0,0,0">
-                        <TextBlock x:Name="TitleText" Text="Home VPN ist ausgeschaltet" FontSize="27" FontWeight="Bold" Foreground="{StaticResource TextBrush}"/>
-                        <TextBlock x:Name="SubtitleText" Text="Keine Verbindung mit dem Heimnetzwerk." FontSize="15" Foreground="{StaticResource MutedBrush}"
-                                   Margin="0,12,0,0" TextWrapping="Wrap"/>
-                        <StackPanel Orientation="Horizontal" Margin="0,14,0,0">
-                            <TextBlock Text="Verbindung" VerticalAlignment="Center" Margin="0,0,8,0" FontSize="11" Foreground="{StaticResource MutedBrush}"/>
-                            <ComboBox x:Name="ProfileSelector" Width="230" Height="30" DisplayMemberPath="DisplayName"
-                                      SelectionChanged="ProfileSelector_SelectionChanged"/>
-                            <Border x:Name="PrimaryProfileChip" Background="#E8F7EE" CornerRadius="9" Padding="9,4" Margin="8,0,0,0" Visibility="Collapsed">
-                                <TextBlock Text="Standard" FontSize="11" Foreground="{StaticResource GreenBrush}"/>
-                            </Border>
-                        </StackPanel>
-                    </StackPanel>
-                </Grid>
-            </Border>
-
-            <!-- Policy / recommendation banner -->
-            <Border x:Name="PolicyBanner" Grid.Row="1" Visibility="Collapsed" Background="{StaticResource OrangeSoftBrush}"
-                    BorderBrush="#F0D394" BorderThickness="1" CornerRadius="14" Padding="16" Margin="0,0,0,16">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
-                    <StackPanel>
-                        <TextBlock x:Name="PolicyBannerTitle" FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource OrangeBrush}"/>
-                        <TextBlock x:Name="PolicyBannerText" FontSize="12" Foreground="{StaticResource MutedBrush}" Margin="0,4,14,0" TextWrapping="Wrap"/>
-                    </StackPanel>
-                    <Button x:Name="OverrideButton" Grid.Column="1" Content="Trotzdem verbinden" Style="{StaticResource SecondaryButton}"
-                            VerticalAlignment="Center" Click="OverrideButton_Click"/>
-                </Grid>
-            </Border>
-
-            <!-- Error -->
-            <Border x:Name="ErrorBanner" Grid.Row="2" Visibility="Collapsed" Background="#FFF0F2" BorderBrush="#F2BBC3"
-                    BorderThickness="1" CornerRadius="14" Padding="14" Margin="0,0,0,16">
-                <TextBlock x:Name="ErrorText" Foreground="{StaticResource RedBrush}" FontSize="12" TextWrapping="Wrap"/>
-            </Border>
-
-            <!-- Details -->
-            <Border Grid.Row="3" Background="{StaticResource CardBrush}" CornerRadius="18" Padding="24" Margin="0,0,0,16">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="38"/>
-                        <ColumnDefinition Width="210"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="54"/>
-                        <RowDefinition Height="1"/>
-                        <RowDefinition Height="54"/>
-                        <RowDefinition Height="1"/>
-                        <RowDefinition Height="54"/>
-                        <RowDefinition Height="1"/>
-                        <RowDefinition Height="54"/>
-                        <RowDefinition Height="1"/>
-                        <RowDefinition Height="54"/>
-                    </Grid.RowDefinitions>
-
-                    <Viewbox Grid.Row="0" Width="22" Height="22" HorizontalAlignment="Left" VerticalAlignment="Center">
-                        <Canvas Width="24" Height="24"><Path Stroke="{StaticResource BlueBrush}" StrokeThickness="2.4" Data="M12,2 L20,5 L19,14 C18,18 15,21 12,22 C9,21 6,18 5,14 L4,5 Z M8,12 L11,15 L16,9"/></Canvas>
-                    </Viewbox>
-                    <TextBlock Grid.Row="0" Grid.Column="1" Text="Verbindungsstatus" VerticalAlignment="Center" FontSize="14"/>
-                    <TextBlock x:Name="ConnectionValue" Grid.Row="0" Grid.Column="2" Text="Getrennt" VerticalAlignment="Center" HorizontalAlignment="Right" FontSize="14" Foreground="{StaticResource RedBrush}"/>
-                    <Border Grid.Row="1" Grid.ColumnSpan="3" Background="{StaticResource BorderBrush}"/>
-
-                    <Viewbox Grid.Row="2" Width="22" Height="22" HorizontalAlignment="Left" VerticalAlignment="Center">
-                        <Canvas Width="24" Height="24"><Path Stroke="{StaticResource BlueBrush}" StrokeThickness="2.3" Data="M12,2 L20,5 L19,14 C18,18 15,21 12,22 C9,21 6,18 5,14 L4,5 Z M9,12 L11,14 L15,10"/></Canvas>
-                    </Viewbox>
-                    <TextBlock Grid.Row="2" Grid.Column="1" Text="VPN-Tunnel" VerticalAlignment="Center" FontSize="14"/>
-                    <TextBlock x:Name="TunnelValue" Grid.Row="2" Grid.Column="2" Text="WireGuard" VerticalAlignment="Center" HorizontalAlignment="Right" FontSize="14" Foreground="{StaticResource MutedBrush}"/>
-                    <Border Grid.Row="3" Grid.ColumnSpan="3" Background="{StaticResource BorderBrush}"/>
-
-                    <Viewbox Grid.Row="4" Width="22" Height="22" HorizontalAlignment="Left" VerticalAlignment="Center">
-                        <Canvas Width="24" Height="24"><Path Stroke="{StaticResource BlueBrush}" StrokeThickness="2.3" Data="M3,4 L21,4 L21,16 L3,16 Z M8,20 L16,20 M12,16 L12,20"/></Canvas>
-                    </Viewbox>
-                    <TextBlock Grid.Row="4" Grid.Column="1" Text="Aktuelles Netzwerk" VerticalAlignment="Center" FontSize="14"/>
-                    <TextBlock x:Name="NetworkValue" Grid.Row="4" Grid.Column="2" Text="–" VerticalAlignment="Center" HorizontalAlignment="Right" FontSize="14" Foreground="{StaticResource MutedBrush}" TextTrimming="CharacterEllipsis"/>
-                    <Border Grid.Row="5" Grid.ColumnSpan="3" Background="{StaticResource BorderBrush}"/>
-
-                    <Viewbox Grid.Row="6" Width="22" Height="22" HorizontalAlignment="Left" VerticalAlignment="Center">
-                        <Canvas Width="24" Height="24"><Path Stroke="{StaticResource BlueBrush}" StrokeThickness="2.3" Data="M4,7 L20,7 M7,4 L4,7 L7,10 M17,4 L20,7 L17,10 M4,17 L20,17 M7,14 L4,17 L7,20 M17,14 L20,17 L17,20"/></Canvas>
-                    </Viewbox>
-                    <TextBlock Grid.Row="6" Grid.Column="1" Text="Routing" VerticalAlignment="Center" FontSize="14"/>
-                    <TextBlock x:Name="RoutingValue" Grid.Row="6" Grid.Column="2" Text="Nur Heimnetz" VerticalAlignment="Center" HorizontalAlignment="Right" FontSize="14" Foreground="{StaticResource MutedBrush}"/>
-                    <Border Grid.Row="7" Grid.ColumnSpan="3" Background="{StaticResource BorderBrush}"/>
-
-                    <Viewbox Grid.Row="8" Width="22" Height="22" HorizontalAlignment="Left" VerticalAlignment="Center">
-                        <Canvas Width="24" Height="24"><Path Stroke="{StaticResource BlueBrush}" StrokeThickness="2.3" Data="M12,3 A9,9 0 1 0 12.01,3 M12,7 L12,12 L16,14"/></Canvas>
-                    </Viewbox>
-                    <TextBlock Grid.Row="8" Grid.Column="1" Text="Verbindungsdauer" VerticalAlignment="Center" FontSize="14"/>
-                    <TextBlock x:Name="DurationValue" Grid.Row="8" Grid.Column="2" Text="--:--:--" VerticalAlignment="Center" HorizontalAlignment="Right" FontSize="14" Foreground="{StaticResource MutedBrush}"/>
-                </Grid>
-            </Border>
-
-            <!-- Routing -->
-            <Border Grid.Row="4" Background="{StaticResource CardBrush}" CornerRadius="18" Padding="22" Margin="0,0,0,16">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
-                    <StackPanel VerticalAlignment="Center" Margin="0,0,20,0">
-                        <TextBlock Text="Verkehr über VPN" FontSize="14" FontWeight="SemiBold"/>
-                        <TextBlock Text="Nur das Heimnetz über WireGuard routen oder den gesamten Internetverkehr über die FRITZ!Box leiten."
-                                   FontSize="11" Foreground="{StaticResource MutedBrush}" Margin="0,5,0,0" TextWrapping="Wrap" MaxWidth="440"/>
-                    </StackPanel>
-                    <StackPanel Grid.Column="1" Orientation="Horizontal">
-                        <RadioButton x:Name="HomeOnlyRadio" GroupName="Routing" Content="Nur Heimnetz" Style="{StaticResource SegmentRadio}" Margin="0,0,8,0" Checked="RoutingRadio_Checked"/>
-                        <RadioButton x:Name="FullTunnelRadio" GroupName="Routing" Content="Gesamter Verkehr" Style="{StaticResource SegmentRadio}" Checked="RoutingRadio_Checked"/>
-                    </StackPanel>
-                </Grid>
-            </Border>
-
-            <!-- Primary action -->
-            <Button x:Name="PrimaryButton" Grid.Row="5" Style="{StaticResource PrimaryButton}" Height="70" Margin="0,0,0,16" Click="PrimaryButton_Click">
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                    <Viewbox Width="28" Height="28" Margin="0,0,12,0">
-                        <Canvas Width="32" Height="32">
-                            <Path Stroke="White" StrokeThickness="3" StrokeStartLineCap="Round" Data="M16,3 L16,15 M8,8 A11,11 0 1 0 24,8"/>
-                        </Canvas>
-                    </Viewbox>
-                    <TextBlock x:Name="PrimaryButtonText" Text="Home VPN einschalten" VerticalAlignment="Center"/>
-                </StackPanel>
-            </Button>
-
-            <!-- Footer -->
-            <Grid Grid.Row="6" Margin="0,0,0,12">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-                <TextBlock x:Name="FooterText" VerticalAlignment="Center" Foreground="{StaticResource MutedBrush}" FontSize="11" Text="WireGuard · kein Profil importiert"/>
-                <Button x:Name="ImportButton" Grid.Column="1" Content="VPN-Konfiguration importieren" Style="{StaticResource SecondaryButton}" Margin="0,0,8,0" Click="ImportButton_Click"/>
-                <Button Grid.Column="2" Content="Einstellungen" Style="{StaticResource SecondaryButton}" Click="SettingsButton_Click"/>
-            </Grid>
-        </Grid>
-    </ScrollViewer>
+<Window x:Class="HomeVpn.Views.MainWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+ Title="HomeVPN" Width="780" Height="660" MinWidth="620" MinHeight="460" WindowStartupLocation="CenterScreen">
+ <Grid x:Name="LayoutRoot" Margin="20">
+  <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+  <Grid x:Name="BrandHeader" Margin="0,0,0,12"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+   <TextBlock Text="HomeVPN" FontSize="18" FontWeight="SemiBold"/><TextBlock x:Name="NetworkValue" Grid.Column="1" Text="Netzwerk wird erkannt …" Foreground="{StaticResource MutedBrush}" TextWrapping="Wrap" MaxWidth="360"/>
+  </Grid>
+  <Border x:Name="ProfileCard" Grid.Row="1" Background="White" CornerRadius="12" Padding="16" Margin="0,0,0,10">
+   <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="64"/><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+    <Grid Width="48" Height="56"><Viewbox><Path Fill="{StaticResource GreenBrush}" Data="M32,3 L57,13 55,35 Q52,51 32,61 Q12,51 9,35 L7,13 Z M17,29 L21,33 24,30 24,46 30,46 30,36 36,36 36,46 42,46 42,30 45,33 49,29 33,15 Z"/></Viewbox>
+     <Border x:Name="StatusBadge" Width="22" Height="22" CornerRadius="11" Background="{StaticResource MutedBrush}" HorizontalAlignment="Right" VerticalAlignment="Bottom"><TextBlock x:Name="StatusBadgeText" Text="–" Foreground="White" HorizontalAlignment="Center"/></Border>
+    </Grid>
+    <StackPanel Grid.Column="1" Margin="8,0,14,0"><TextBlock x:Name="TitleText" FontSize="21" FontWeight="SemiBold" TextWrapping="Wrap"/><TextBlock x:Name="SubtitleText" FontSize="12" Foreground="{StaticResource MutedBrush}" TextWrapping="Wrap" Margin="0,5,0,0"/></StackPanel>
+    <StackPanel Grid.Column="2" Width="190"><ComboBox x:Name="ProfileSelector" DisplayMemberPath="DisplayName" SelectionChanged="ProfileSelector_SelectionChanged"/><Border x:Name="PrimaryProfileChip" Visibility="Collapsed" Margin="0,6,0,0"><TextBlock Text="Standard-VPN" Foreground="{StaticResource GreenBrush}" FontSize="11"/></Border></StackPanel>
+   </Grid>
+  </Border>
+  <Border x:Name="PolicyBanner" Grid.Row="2" Visibility="Collapsed" Background="{StaticResource OrangeSoftBrush}" CornerRadius="8" Padding="12" Margin="0,0,0,8">
+   <Grid><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><StackPanel><TextBlock x:Name="PolicyBannerTitle" FontWeight="SemiBold" TextWrapping="Wrap"/><TextBlock x:Name="PolicyBannerText" FontSize="12" TextWrapping="Wrap" Margin="0,4,12,0"/></StackPanel><Button x:Name="OverrideButton" Grid.Column="1" Content="Trotzdem verbinden" Style="{StaticResource SecondaryButton}" Click="OverrideButton_Click" VerticalAlignment="Center"/></Grid>
+  </Border>
+  <Border x:Name="ErrorBanner" Grid.Row="3" Visibility="Collapsed" Background="#FFF0F2" CornerRadius="8" Padding="10" Margin="0,0,0,8"><TextBlock x:Name="ErrorText" TextWrapping="Wrap" Foreground="{StaticResource RedBrush}" FontSize="12"/></Border>
+  <Grid Grid.Row="4" Margin="0,0,0,10"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition/></Grid.ColumnDefinitions>
+   <StackPanel><TextBlock Text="Verbindung" FontSize="11" Foreground="{StaticResource MutedBrush}"/><TextBlock x:Name="ConnectionValue" FontWeight="SemiBold"/><TextBlock x:Name="TunnelValue" FontSize="11" Foreground="{StaticResource MutedBrush}" TextWrapping="Wrap"/></StackPanel>
+   <StackPanel Grid.Column="1" HorizontalAlignment="Right"><TextBlock x:Name="RoutingValue"/><TextBlock x:Name="DurationValue" FontSize="12" Foreground="{StaticResource MutedBrush}" HorizontalAlignment="Right"/></StackPanel>
+  </Grid>
+  <Grid Grid.Row="5"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition/></Grid.ColumnDefinitions>
+   <StackPanel Margin="0,0,10,0"><TextBlock Text="Verkehr über VPN" FontSize="12" Margin="0,0,0,5"/><UniformGrid Columns="2"><RadioButton x:Name="HomeOnlyRadio" GroupName="Routing" Content="Nur Heimnetz" Style="{StaticResource SegmentRadio}" Padding="8,9" Checked="RoutingRadio_Checked"/><RadioButton x:Name="FullTunnelRadio" GroupName="Routing" Content="Gesamter Verkehr" Style="{StaticResource SegmentRadio}" Padding="8,9" Checked="RoutingRadio_Checked"/></UniformGrid></StackPanel>
+   <Button x:Name="PrimaryButton" Grid.Column="1" Style="{StaticResource PrimaryButton}" Padding="10,12" VerticalAlignment="Bottom" Click="PrimaryButton_Click"><TextBlock x:Name="PrimaryButtonText" TextWrapping="Wrap" FontSize="14" TextAlignment="Center"/></Button>
+  </Grid>
+  <Grid Grid.Row="6" Margin="0,12,0,10"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition/></Grid.RowDefinitions><TextBlock Text="Weitere Verbindungen" FontSize="12" Foreground="{StaticResource MutedBrush}" Margin="0,0,0,5"/>
+   <ListBox x:Name="OtherProfiles" Grid.Row="1" BorderThickness="0" Background="Transparent" ScrollViewer.HorizontalScrollBarVisibility="Disabled" HorizontalContentAlignment="Stretch">
+    <ListBox.ItemTemplate><DataTemplate><Grid Margin="4,3"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><StackPanel><TextBlock Text="{Binding Profile.DisplayName}" FontWeight="SemiBold" TextWrapping="Wrap"/><TextBlock Text="{Binding Summary}" FontSize="11" Foreground="{StaticResource MutedBrush}" TextWrapping="Wrap"/></StackPanel><Button Grid.Column="1" Content="Öffnen" Tag="{Binding Profile.Id}" Click="OtherSelect_Click" Style="{StaticResource SecondaryButton}" Margin="8,0"/><Button Grid.Column="2" Content="{Binding Action}" Tag="{Binding Profile.Id}" Click="OtherToggle_Click" Style="{StaticResource SecondaryButton}"/></Grid></DataTemplate></ListBox.ItemTemplate>
+   </ListBox>
+  </Grid>
+  <Grid Grid.Row="7"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBlock x:Name="FooterText" FontSize="11" Foreground="{StaticResource MutedBrush}" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,10,0"/><Button x:Name="ImportButton" Grid.Column="1" Content="Verbindung hinzufügen" Style="{StaticResource SecondaryButton}" Click="ImportButton_Click" Margin="0,0,8,0"/><Button Grid.Column="2" Content="Einstellungen" Style="{StaticResource SecondaryButton}" Click="SettingsButton_Click"/></Grid>
+ </Grid>
 </Window>

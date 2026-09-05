@@ -5,7 +5,7 @@ using HomeVpn.Models;
 
 namespace HomeVpn.Infrastructure;
 
-public sealed class WindowsServiceManager
+public sealed class WindowsServiceManager : ITunnelController
 {
     private const uint ScManagerConnect = 0x0001;
     private const uint ServiceQueryStatus = 0x0004;
@@ -111,6 +111,11 @@ public sealed class WindowsServiceManager
         var current = Query(serviceName);
         if (current.State is WindowsServiceState.NotFound or WindowsServiceState.Stopped)
             return;
+        if (current.State == WindowsServiceState.StopPending)
+        {
+            await WaitForStateAsync(serviceName, WindowsServiceState.Stopped, TimeSpan.FromSeconds(12), cancellationToken);
+            return;
+        }
 
         var scm = OpenSCManager(null, null, ScManagerConnect);
         if (scm == IntPtr.Zero)

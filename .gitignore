@@ -34,3 +34,6 @@ Thumbs.db
 vendor/
 runtime-cache/
 *.nupkg
+.wix/
+TestResults/
+*.conf.dpapi.tmp

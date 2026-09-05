@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.Windows;
+using System.Windows.Input;
 using HomeVpn.Core;
 using HomeVpn.Models;
 using HomeVpn.Services;
@@ -10,23 +11,28 @@ public partial class SettingsWindow : Window
 {
     private readonly AppServices _services;
     private readonly ObservableCollection<ExcludedNetworkRule> _rules;
+    private readonly List<VpnProfile> _profiles;
 
     public SettingsWindow(AppServices services)
     {
         InitializeComponent();
+        MaxHeight = SystemParameters.WorkArea.Height - 20;
+        Height = Math.Min(Height, MaxHeight);
         _services = services;
+        _profiles = System.Text.Json.JsonSerializer.Deserialize<List<VpnProfile>>(System.Text.Json.JsonSerializer.Serialize(services.Settings.Profiles))!;
         _rules = new ObservableCollection<ExcludedNetworkRule>(_services.Settings.ExcludedNetworks.Select(x => x.Clone()));
         RulesGrid.ItemsSource = _rules;
         AutostartCheck.IsChecked = _services.Settings.StartWithWindows;
         _services.Settings.NormalizeProfileSelection();
-        PrimaryProfileBox.ItemsSource = _services.Settings.Profiles;
-        PrimaryProfileBox.SelectedItem = _services.Settings.GetPrimaryProfile();
+        PrimaryProfileBox.ItemsSource = _profiles;
+        PrimaryProfileBox.SelectedItem = _profiles.FirstOrDefault(p => p.Id == _services.Settings.PrimaryProfileId);
         PrimaryProfileBox.IsEnabled = _services.Settings.Profiles.Count > 0;
+        RuleScope.ItemsSource = new[] { new VpnProfile { Id = Guid.Empty, DisplayName = "Alle Verbindungen" } }.Concat(_services.Settings.Profiles).ToArray();
     }
 
-    private void AddCurrent_Click(object sender, RoutedEventArgs e)
+    private async void AddCurrent_Click(object sender, RoutedEventArgs e)
     {
-        var network = _services.NetworkDetector.GetSnapshot();
+        var network = await Task.Run(() => _services.NetworkDetector.GetSnapshot());
         if (!network.HasUsableNetwork)
         {
             ValidationText.Text = "Aktuell ist kein nutzbares LAN/WLAN erkannt.";
@@ -64,8 +70,7 @@ public partial class SettingsWindow : Window
 
     private async void Save_Click(object sender, RoutedEventArgs e)
     {
-        RulesGrid.CommitEdit();
-        RulesGrid.CommitEdit();
+        FocusManager.SetFocusedElement(this, this);
         ValidationText.Text = string.Empty;
 
         foreach (var rule in _rules)
@@ -83,6 +88,16 @@ public partial class SettingsWindow : Window
             }
         }
 
+        if (_profiles.Any(p => string.IsNullOrWhiteSpace(p.DisplayName) || p.DisplayName.Length > 80 || p.DisplayName.Any(char.IsControl)))
+        { ValidationText.Text = "Ein Verbindungsname muss 1 bis 80 Zeichen enthalten."; return; }
+        await _services.PolicyEngine.SuspendAsync();
+        try
+        {
+        foreach (var edited in _profiles)
+        {
+            var original = _services.Settings.Profiles.FirstOrDefault(p => p.Id == edited.Id);
+            if (original is not null) original.DisplayName = edited.DisplayName.Trim();
+        }
         _services.Settings.ExcludedNetworks = _rules.Select(x => x.Clone()).ToList();
         _services.Settings.StartWithWindows = AutostartCheck.IsChecked == true;
         if (PrimaryProfileBox.SelectedItem is VpnProfile primary)
@@ -99,9 +114,56 @@ public partial class SettingsWindow : Window
             return;
         }
 
-        await _services.PolicyEngine.RefreshAsync(force: true);
         DialogResult = true;
+        }
+        finally { _services.PolicyEngine.SetSuspended(false); await _services.PolicyEngine.RefreshAsync(force: true); }
     }
 
     private void Cancel_Click(object sender, RoutedEventArgs e) => DialogResult = false;
+    private void Rule_Selected(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+    {
+        if (RuleScope.ItemsSource is IEnumerable<VpnProfile> items && RulesGrid.SelectedItem is ExcludedNetworkRule rule)
+            RuleScope.SelectedItem = items.FirstOrDefault(x => x.Id == rule.ProfileIds.FirstOrDefault());
+    }
+    private void Scope_Selected(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+    { if (RulesGrid.SelectedItem is ExcludedNetworkRule rule && RuleScope.SelectedItem is VpnProfile p) rule.ProfileIds = p.Id == Guid.Empty ? [] : [p.Id]; }
+    private void Import_Click(object sender, RoutedEventArgs e) { DialogResult = false; if (Owner is MainWindow main) main.Dispatcher.BeginInvoke(main.AddProfile); }
+    private async void RemoveProfile_Click(object sender, RoutedEventArgs e)
+    {
+        if (PrimaryProfileBox.SelectedItem is not VpnProfile profile) return;
+        await _services.PolicyEngine.SuspendAsync();
+        try
+        {
+            if (profile.Backend == TunnelBackendKind.EmbeddedWireGuard) await _services.ProfileInstaller.RemoveAsync(profile.Id);
+            _services.Settings.Profiles.RemoveAll(p => p.Id == profile.Id);
+            _profiles.Remove(profile);
+            _services.Settings.NormalizeProfileSelection();
+            _services.SettingsStore.Save(_services.Settings);
+            PrimaryProfileBox.Items.Refresh();
+            PrimaryProfileBox.SelectedItem = _profiles.FirstOrDefault(p => p.Id == _services.Settings.PrimaryProfileId);
+        }
+        catch (Exception ex) { ErrorDialog.Show(this, ex); }
+        finally { _services.PolicyEngine.SetSuspended(false); }
+    }
+
+    private void ConfigureDns_Click(object sender, RoutedEventArgs e)
+    {
+        if (PrimaryProfileBox.SelectedItem is not VpnProfile edited) return;
+        var original = _services.Settings.Profiles.Single(p => p.Id == edited.Id);
+        if (original.Backend != TunnelBackendKind.EmbeddedWireGuard) { ValidationText.Text = "Bitte das alte Profil zunächst als Embedded-Verbindung neu importieren."; return; }
+        var dialog = new SplitDnsWindow(edited.DisplayName, original.HomeCidrs, original.SplitDns, async dns =>
+        {
+            await _services.PolicyEngine.SuspendAsync();
+            try
+            {
+                await _services.ServiceManager.StopAsync(original.HomeServiceName);
+                await _services.ServiceManager.StopAsync(original.FullServiceName);
+                await _services.ProfileInstaller.ConfigureDnsAsync(original.Id, dns);
+                original.SplitDns = dns; edited.SplitDns = dns;
+                _services.SettingsStore.Save(_services.Settings);
+            }
+            finally { _services.PolicyEngine.SetSuspended(false); await _services.PolicyEngine.RefreshAsync(force: true); }
+        }) { Owner = this };
+        dialog.ShowDialog();
+    }
 }

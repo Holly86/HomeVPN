@@ -67,11 +67,25 @@ public partial class App : System.Windows.Application
         }
 
         var settingsStore = new SettingsStore();
-        var settings = settingsStore.Load();
+        HomeVpn.Models.AppSettings settings;
+        try { settings = settingsStore.Load(); }
+        catch (Exception ex)
+        {
+            var owner = new Window { Title = "HomeVPN", Width = 500, Height = 200, WindowStartupLocation = WindowStartupLocation.CenterScreen };
+            owner.Show(); ErrorDialog.Show(owner, ex); owner.Close(); Shutdown(1); return;
+        }
         var autostart = new AutostartService();
+        var background = args.Any(x => x.Equals("--background", StringComparison.OrdinalIgnoreCase));
+        if (background && !settings.StartWithWindows)
+        {
+            // Honor the user's opt-out even if an older startup command still invokes the app.
+            try { autostart.SetEnabled(false, installation.InstalledExecutablePath); } catch { }
+            Shutdown(0);
+            return;
+        }
         var networkDetector = new NetworkDetector();
         var serviceManager = new WindowsServiceManager();
-        var profileInstaller = new ProfileInstaller(settingsStore, installation);
+        var profileInstaller = new ProfileInstaller(installation);
         var policyEngine = new VpnPolicyEngine(settings, settingsStore, networkDetector, serviceManager);
 
         _services = new AppServices
@@ -88,7 +102,7 @@ public partial class App : System.Windows.Application
 
         try
         {
-            autostart.SetEnabled(settings.StartWithWindows, installation.InstalledExecutablePath);
+            if (installation.IsRunningInstalledCopy) autostart.SetEnabled(settings.StartWithWindows, installation.InstalledExecutablePath);
         }
         catch
         {
@@ -100,7 +114,6 @@ public partial class App : System.Windows.Application
         _tray = new TrayService(_mainWindow, _services);
         policyEngine.Start();
 
-        var background = args.Any(x => x.Equals("--background", StringComparison.OrdinalIgnoreCase));
         if (!background || settings.Profiles.Count == 0)
             _mainWindow.Show();
 

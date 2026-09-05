@@ -1,48 +1,27 @@
 name: build
-
 on:
   push:
-    branches: [ main ]
+    branches: [main, 'codex/**']
   pull_request:
   workflow_dispatch:
-
 permissions:
   contents: read
-
 jobs:
   build-windows:
     runs-on: windows-latest
+    timeout-minutes: 45
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
-
-      - name: Restore
-        run: dotnet restore HomeVPN.sln
-
-      - name: Build
-        run: dotnet build HomeVPN.sln -c Release --no-restore
-
-      - name: Publish single-file Windows app
-        run: >-
-          dotnet publish src/HomeVpn.App/HomeVpn.App.csproj
-          -c Release
-          -r win-x64
-          --self-contained true
-          -p:PublishSingleFile=true
-          -p:IncludeNativeLibrariesForSelfExtract=true
-          -p:PublishTrimmed=false
-          -p:DebugType=None
-          -p:DebugSymbols=false
-          -o artifacts/HomeVPN-win-x64
-
-      - name: Upload application artifact
-        uses: actions/upload-artifact@v4
+      - name: Build pinned runtime, test and package
+        shell: pwsh
+        run: ./scripts/Build-Installer.ps1
+      - uses: actions/upload-artifact@v4
         with:
-          name: HomeVPN-win-x64
-          path: artifacts/HomeVPN-win-x64/HomeVPN.exe
+          name: HomeVPN-Setup-win-x64
+          path: |
+            artifacts/installer/HomeVPN-Setup-win-x64.exe
+            artifacts/installer/HomeVPN.msi
           if-no-files-found: error

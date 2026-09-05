@@ -1,117 +1,48 @@
 # HomeVPN for Windows
 
-HomeVPN is a small native Windows VPN companion for FRITZ!Box-style WireGuard remote-access profiles. It adds network-aware auto-connect policy, Home-only vs. Full-Tunnel routing, excluded networks with session overrides, startup state restoration, multiple named VPN profiles, and a tray UI without requiring administrator rights for everyday connect/disconnect operations.
+HomeVPN is a native WPF application with an embedded official WireGuard runtime. A separate WireGuard application is not required. Windows 10/11 x64 is supported; the installer includes .NET.
 
-## Current scope
+## Install and import
 
-The first implementation uses an already installed **WireGuard for Windows** runtime. The code is intentionally structured around named profiles so the app is not tied to a hardcoded `Home` tunnel.
+Build or download HomeVPN-Setup-win-x64.exe and run the per-machine installer. HomeVPN installs to Program Files\HomeVPN. You can install without a VPN configuration and import one later.
 
-A second runtime backend is planned that uses WireGuard's official **embeddable-dll-service** and WireGuardNT so HomeVPN can operate without a separate WireGuard application installation. See [`docs/EMBEDDED-WIREGUARD.md`](docs/EMBEDDED-WIREGUARD.md).
+Start HomeVPN normally, select a local WireGuard .conf, choose a display name and verify the remote target CIDRs. Choose a primary profile, optionally exclude the current network, and enable login autostart. Import elevates once to provision two demand-start services and perform a split-only test. An unreachable peer produces a warning with Retry; it does not silently replace the default route.
 
-## What it does
+After setup the importing account can query, start, stop and interrogate its own services without elevation. Service configuration and encrypted keys remain administrator protected. Temporary-admin workflows require same-account elevation; alternate administrator credentials are deliberately rejected.
 
-- Imports ordinary WireGuard `.conf` profiles from a FRITZ!Box or another compatible WireGuard endpoint.
-- Lets the user assign every import a human-friendly profile name and a technical tunnel name.
-- Supports a **Standard-VPN** plus additional named profiles such as `Mutter`, `Vater`, `Labor`, etc.
-- Derives two local tunnel variants from each imported profile:
-  - **Nur Heimnetz**: only configured target CIDRs are routed through the selected WireGuard tunnel (local internet breakout).
-  - **Gesamter Verkehr**: default traffic is routed through the selected WireGuard tunnel.
-- Persists desired ON/OFF state and routing mode **per profile**.
-- Allows multiple Home-only profiles to be active in parallel. Full-Tunnel mode is deliberately exclusive to avoid competing `/0` routes and multiple Windows kill-switch policies.
-- Keeps tunnel services on **manual start**. The app, not Windows service autostart, decides when a tunnel should run.
-- Restores the user's saved profile states after Windows login.
-- Automatically pauses VPN on user-defined excluded networks such as home or office LAN/WLAN.
-- Allows an excluded network to be **temporarily overridden for the current network session** when the rule permits it.
-- Supports profile-scoped exclusions. Example: being at your own home can suppress the `Home` profile while a second profile to a family member remains available.
-- Detects connected Wi-Fi SSID and whether WLAN security is enabled. Unknown Wi-Fi can trigger a VPN recommendation; open Wi-Fi produces a stronger warning.
-- Runs in the Windows notification area and uses a DPI-safe WPF UI.
-- Stores **no WireGuard private key in HomeVPN settings**.
+## Connection policy
 
-## Profile model
+Each immutable GUID identifies a profile independently of its editable name. Desired on/off and routing mode persist per profile. Effective state reflects SCM state and policy errors are shown separately. Primary and selected profiles are distinct.
 
-`HomeVPN` distinguishes:
+- **Nur Heimnetz:** only verified target CIDRs; local internet stays local. Optional [split DNS](docs/SPLIT-DNS.md) sends configured home domains to a remote home DNS server; other names keep local DNS.
+- **Gesamter Verkehr:** IPv4 default route, plus IPv6 default when the imported interface has IPv6. Remote peer forwarding must support this.
+- Non-overlapping split profiles can run together. Full tunnel is exclusive. Overlapping CIDRs block the losing profile without clearing its desired state. All losing services stop before any winning service starts.
+- Exclusions suppress automatic connection. “Trotzdem verbinden” overrides a permitted rule only for the current network fingerprint; address/SSID changes, network loss and app restart clear it.
+- Open WLAN produces a warning and unknown WLAN a recommendation; neither silently forces full tunnel.
+- Active foreign WireGuard adapters conservatively block HomeVPN connections. HomeVPN never automatically stops or deletes them.
 
-- **Standard-VPN**: the preferred/default profile selected at startup.
-- **Selected profile**: the profile currently shown and controlled by the main UI/tray.
-- **Desired state per profile**: whether that profile should normally be connected.
-- **Effective state per profile**: whether current network policy/routing constraints permit it to run.
+## Protected configuration
 
-Additional profiles can be selected and enabled independently. Home-only profiles may run in parallel when their remote networks are compatible. If any profile is using Full-Tunnel mode, HomeVPN treats it as exclusive because `/0` routing and WireGuard for Windows' full-tunnel kill-switch semantics should not compete.
+The strict parser supports one Interface and one Peer, rejects hooks and unknown directives, and deterministically renders split/full variants. Windows machine-scope DPAPI encrypts each variant under ProgramData\HomeVPN\Profiles\GUID. Only SYSTEM and Administrators can access that tree. The official tunnel.dll reads .conf.dpapi directly: no plaintext staging file exists. LocalAppData settings contain metadata only.
 
-## Requirements for the current backend
-
-- Windows 10/11 x64
-- Official **WireGuard for Windows** installed in the standard Program Files location
-- One-time administrator rights when importing a VPN profile
-- .NET is **not** required when using the self-contained release build
-
-The planned embedded backend removes the separate WireGuard application requirement, but still needs a one-time elevated setup because Windows service/driver installation is privileged.
-
-## First run
-
-1. Download `HomeVPN.exe` from a release or GitHub Actions artifact.
-2. Start it normally. The executable installs itself per-user to `%LOCALAPPDATA%\Programs\HomeVPN` and relaunches.
-3. Click **VPN-Konfiguration importieren** and select a `.conf` exported by the FRITZ!Box/WireGuard endpoint.
-4. Enter a friendly connection name and a unique technical tunnel name.
-5. Verify the target-network CIDRs used for **Nur Heimnetz**.
-6. Choose whether the new profile should become the **Standard-VPN**.
-7. Complete the one-time elevated setup. On environments using temporary admin membership (for example a Make-Me-Admin workflow), activate that membership before confirming elevation.
-8. Add or edit excluded networks in **Einstellungen**.
-
-Further profiles can be imported later with **Weitere Verbindung importieren**.
-
-After setup, HomeVPN only needs the service start/stop/query permissions granted during import; ordinary use does not require elevation.
-
-## Excluded-network semantics
-
-An exclusion is an **automatic-connect suppression rule**, not necessarily a permanent block.
-
-Example:
-
-- `Office` matches current SSID/subnet -> the affected profile stays off automatically.
-- User clicks **Trotzdem verbinden** -> the exclusion is overridden for this network session.
-- The network changes or HomeVPN restarts -> the override disappears and `Office` is excluded again.
-
-When a rule contains both a network-name/SSID pattern and a subnet, **both must match**. This reduces false positives on common RFC1918 ranges.
-
-Rules with no profile scope apply globally. Automatically created `Zuhause · <Profil>` rules are scoped to the imported profile only.
-
-## Full tunnel note
-
-Full Tunnel uses `0.0.0.0/0` and adds `::/0` when IPv6 is present in the imported profile. WireGuard for Windows applies its `/0` full-tunnel / kill-switch semantics. Whether internet access through the tunnel works also depends on the remote WireGuard/FRITZ!Box configuration.
-
-## Secrets and the public repository
-
-Never commit a real VPN configuration. The repository ignores:
-
-```text
-*.conf
-*.conf.dpapi
-*.key
-*.pem
-*.pfx
-*.p12
-secrets/
-vpn-config/
-```
-
-The runtime import is deliberately local; source `.conf` files are not added to the project or repository.
+Legacy settings remain readable but require reimport. Their previous WireGuard services are never adopted or removed on ambiguous ownership. The old per-user executable is not automatically deleted. See [architecture](docs/ARCHITECTURE.md), [upstream evidence](docs/UPSTREAM-PINS.md), [security review](SECURITY.md) and [validation record](docs/VALIDATION.md).
 
 ## Build
 
-```powershell
-dotnet restore HomeVPN.sln
-dotnet build HomeVPN.sln -c Release
-dotnet publish src/HomeVpn.App/HomeVpn.App.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:PublishTrimmed=false
-```
+On Windows with Git and .NET 8 SDK:
 
-The included GitHub Actions workflow produces a self-contained `HomeVPN.exe` on `windows-latest`.
+~~~powershell
+./scripts/Build-Installer.ps1
+~~~
 
-## Design
+The script downloads pinned official toolchains and WireGuardNT, verifies archive and output hashes, builds the upstream tunnel DLL, restores/builds/tests managed projects, publishes self-contained apps, and creates a WiX 5 MSI + Burn bootstrapper. Outputs are under artifacts/installer and artifacts/HomeVPN. Native archives and real configurations must never be committed.
 
-- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) – state model, multiple profiles, service ACL model and network policy.
-- [`docs/EMBEDDED-WIREGUARD.md`](docs/EMBEDDED-WIREGUARD.md) – plan for operating without a separate WireGuard for Windows installation.
+For managed checks only: dotnet test HomeVPN.sln -c Release. The test-only VisualHarness is excluded from the installer; its synthetic scenarios never control services. Scaling in this harness is layout simulation, not proof of actual Windows DPI changes.
 
-## License
+## Maintenance
 
-MIT. HomeVPN is an independent application. The current backend controls an existing WireGuard for Windows installation; future bundled WireGuard components retain their own upstream licenses and notices.
+The prioritized path to a stable release is documented in the [release plan](docs/RELEASE-PLAN.md), including acceptance criteria and the safe removal of a parallel WireGuard installation. Its uninstaller can remove HomeVPN tunnel services because they share the upstream-required service prefix; follow the planned repair/migration procedure before removing it.
+
+Setup offers repair/removal. The profile retention checkbox defaults to keeping encrypted profiles for reinstall. Unchecked removes HomeVPN-owned protected configuration only. For unattended removal use KEEP_PROFILES=0 explicitly. Services are recreated as demand start during reinstall; no connection begins before user policy evaluation.
+
+Current validation and remaining manual acceptance work are documented in docs/VALIDATION.md. Local development packages are unsigned; production signing requires the project owner's certificate and is not fabricated.

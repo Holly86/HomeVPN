@@ -1,81 +1,16 @@
-<Window x:Class="HomeVpn.Views.SettingsWindow"
-        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Home VPN – Einstellungen"
-        Width="820" Height="650" MinWidth="720" MinHeight="560"
-        WindowStartupLocation="CenterOwner">
-    <Grid Margin="24">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
-        </Grid.RowDefinitions>
-
-        <StackPanel Grid.Row="0" Margin="0,0,0,18">
-            <TextBlock Text="Einstellungen" FontSize="23" FontWeight="Bold"/>
-            <TextBlock Text="Excluded Networks pausieren ausschließlich den automatischen VPN-Aufbau. Ein erlaubter manueller Override gilt nur bis zum nächsten Netzwerkwechsel bzw. App-Neustart."
-                       Foreground="{StaticResource MutedBrush}" FontSize="11" TextWrapping="Wrap" Margin="0,6,0,0"/>
-        </StackPanel>
-
-        <Border Grid.Row="1" Background="{StaticResource CardBrush}" CornerRadius="15" Padding="18" Margin="0,0,0,14">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="260"/>
-                </Grid.ColumnDefinitions>
-                <CheckBox x:Name="AutostartCheck" Content="Beim Windows-Login starten und gespeicherte Profilzustände anwenden" FontSize="12" VerticalAlignment="Center"/>
-                <StackPanel Grid.Column="1">
-                    <TextBlock Text="Standard-VPN" FontSize="11" Foreground="{StaticResource MutedBrush}"/>
-                    <ComboBox x:Name="PrimaryProfileBox" Margin="0,5,0,0" Height="30" DisplayMemberPath="DisplayName"/>
-                </StackPanel>
-            </Grid>
-        </Border>
-
-        <Border Grid.Row="2" Background="{StaticResource CardBrush}" CornerRadius="15" Padding="18">
-            <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
-                    <RowDefinition Height="Auto"/>
-                </Grid.RowDefinitions>
-                <Grid Grid.Row="0" Margin="0,0,0,12">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
-                    <StackPanel>
-                        <TextBlock Text="Ausgeschlossene Netzwerke" FontSize="15" FontWeight="SemiBold"/>
-                        <TextBlock Text="Sind Name und Subnetz gesetzt, müssen beide Merkmale passen. * und ? sind im Netzwerknamen als Wildcards erlaubt."
-                                   Foreground="{StaticResource MutedBrush}" FontSize="10.5" Margin="0,4,0,0"/>
-                    </StackPanel>
-                    <StackPanel Grid.Column="1" Orientation="Horizontal">
-                        <Button Content="Aktuelles hinzufügen" Style="{StaticResource SecondaryButton}" Margin="0,0,7,0" Click="AddCurrent_Click"/>
-                        <Button Content="Neu" Style="{StaticResource SecondaryButton}" Click="AddBlank_Click"/>
-                    </StackPanel>
-                </Grid>
-
-                <DataGrid x:Name="RulesGrid" Grid.Row="1" AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False"
-                          HeadersVisibility="Column" GridLinesVisibility="Horizontal" BorderThickness="1" BorderBrush="{StaticResource BorderBrush}"
-                          RowHeaderWidth="0" SelectionMode="Single" SelectionUnit="FullRow" FontSize="12">
-                    <DataGrid.Columns>
-                        <DataGridTextColumn Header="Name" Binding="{Binding Name, UpdateSourceTrigger=PropertyChanged}" Width="1.2*"/>
-                        <DataGridTextColumn Header="Netzwerkname / SSID" Binding="{Binding NetworkNamePattern, UpdateSourceTrigger=PropertyChanged}" Width="1.5*"/>
-                        <DataGridTextColumn Header="Subnetz (CIDR)" Binding="{Binding SubnetCidr, UpdateSourceTrigger=PropertyChanged}" Width="1.2*"/>
-                        <DataGridCheckBoxColumn Header="Override" Binding="{Binding AllowManualOverride, UpdateSourceTrigger=PropertyChanged}" Width="85"/>
-                    </DataGrid.Columns>
-                </DataGrid>
-
-                <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,10,0,0">
-                    <Button Content="Ausgewählte Regel entfernen" Style="{StaticResource SecondaryButton}" Click="RemoveSelected_Click"/>
-                    <TextBlock x:Name="ValidationText" Foreground="{StaticResource RedBrush}" Margin="14,0,0,0" VerticalAlignment="Center" TextWrapping="Wrap"/>
-                </StackPanel>
-            </Grid>
-        </Border>
-
-        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
-            <Button Content="Abbrechen" Style="{StaticResource SecondaryButton}" Margin="0,0,8,0" Click="Cancel_Click"/>
-            <Button Content="Speichern" Style="{StaticResource PrimaryButton}" Padding="20,10" FontSize="13" Click="Save_Click"/>
-        </StackPanel>
-    </Grid>
+<Window x:Class="HomeVpn.Views.SettingsWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Title="Einstellungen · HomeVPN" Width="740" Height="570" MinWidth="640" MinHeight="460" WindowStartupLocation="CenterOwner">
+ <Grid Margin="20"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition/><RowDefinition Height="Auto"/></Grid.RowDefinitions><TextBlock Text="Einstellungen" FontSize="24" FontWeight="SemiBold" Margin="0,0,0,16"/>
+ <TabControl Grid.Row="1">
+  <TabItem Header="Allgemein"><StackPanel Margin="20"><TextBlock Text="Bereit nach der Anmeldung" FontSize="18" FontWeight="SemiBold"/><CheckBox x:Name="AutostartCheck" Margin="0,18,0,12"><TextBlock Text="HomeVPN mit Windows starten und gespeicherte Policy anwenden" TextWrapping="Wrap"/></CheckBox><TextBlock Text="Die App startet im Infobereich. Tunnel starten erst nach der Netzwerkprüfung." TextWrapping="Wrap" Foreground="{StaticResource MutedBrush}"/></StackPanel></TabItem>
+  <TabItem Header="VPN-Verbindungen"><Grid Margin="18"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition/></Grid.RowDefinitions><TextBlock Text="Standard-VPN"/><ComboBox x:Name="PrimaryProfileBox" Grid.Row="1" DisplayMemberPath="DisplayName" Margin="0,6,0,14"/><TextBlock Grid.Row="2" Text="Anzeigename der ausgewählten Verbindung"/><TextBox Grid.Row="3" Text="{Binding SelectedItem.DisplayName, ElementName=PrimaryProfileBox, UpdateSourceTrigger=PropertyChanged}" MaxLength="80" Margin="0,6,0,14"/><StackPanel Grid.Row="4"><TextBlock Text="Routing wechseln Sie direkt im Hauptfenster. Bei mehreren Split-Tunneln müssen die Zielnetze unterschiedlich sein." TextWrapping="Wrap" Foreground="{StaticResource MutedBrush}"/><WrapPanel Margin="0,16,0,0"><Button Content="Heimnetz-DNS …" Click="ConfigureDns_Click" Style="{StaticResource SecondaryButton}" Margin="0,0,8,8"/><Button Content="Verbindung hinzufügen" Click="Import_Click" Style="{StaticResource SecondaryButton}" Margin="0,0,8,8"/><Button Content="Ausgewähltes Profil entfernen" Click="RemoveProfile_Click" Style="{StaticResource SecondaryButton}" Margin="0,0,0,8"/></WrapPanel></StackPanel></Grid></TabItem>
+  <TabItem Header="Netzwerkregeln"><Grid Margin="14"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition/></Grid.RowDefinitions><WrapPanel Margin="0,0,0,10"><Button Content="Aktuelles Netzwerk" Click="AddCurrent_Click" Style="{StaticResource SecondaryButton}" Margin="0,0,8,0"/><Button Content="Neue Regel" Click="AddBlank_Click" Style="{StaticResource SecondaryButton}" Margin="0,0,8,0"/><Button Content="Entfernen" Click="RemoveSelected_Click" Style="{StaticResource SecondaryButton}"/></WrapPanel>
+   <Grid Grid.Row="1"><Grid.ColumnDefinitions><ColumnDefinition Width="190"/><ColumnDefinition/></Grid.ColumnDefinitions><ListBox x:Name="RulesGrid" DisplayMemberPath="Name" SelectionChanged="Rule_Selected" ScrollViewer.HorizontalScrollBarVisibility="Disabled"/>
+    <Grid Grid.Column="1" Margin="14,0,0,0" DataContext="{Binding SelectedItem, ElementName=RulesGrid}"><Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition/></Grid.ColumnDefinitions><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions><TextBlock Text="Name" VerticalAlignment="Center" Margin="0,0,10,8"/><TextBox Grid.Column="1" Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,8"/><TextBlock Grid.Row="1" Text="SSID / Name" VerticalAlignment="Center" Margin="0,0,10,8"/><TextBox Grid.Row="1" Grid.Column="1" Text="{Binding NetworkNamePattern}" Margin="0,0,0,8"/><TextBlock Grid.Row="2" Text="Subnetz-CIDR" VerticalAlignment="Center" Margin="0,0,10,8"/><TextBox Grid.Row="2" Grid.Column="1" Text="{Binding SubnetCidr}" Margin="0,0,0,8"/><TextBlock Grid.Row="3" Text="Gilt für" VerticalAlignment="Center" Margin="0,0,10,8"/><ComboBox x:Name="RuleScope" Grid.Row="3" Grid.Column="1" DisplayMemberPath="DisplayName" SelectionChanged="Scope_Selected" Margin="0,0,0,8"/><CheckBox Grid.Row="4" Grid.ColumnSpan="2" IsChecked="{Binding AllowManualOverride}"><TextBlock Text="Manuelles „Trotzdem verbinden“ erlauben" TextWrapping="Wrap"/></CheckBox></Grid>
+   </Grid>
+  </Grid></TabItem>
+  <TabItem Header="Sicherheit"><StackPanel Margin="20"><TextBlock Text="Schlüssel bleiben auf diesem PC" FontSize="18" FontWeight="SemiBold"/><TextBlock Text="HomeVPN speichert die Konfiguration maschinengebunden mit Windows DPAPI. Nur SYSTEM und Administratoren haben Zugriff auf den geschützten Speicher." TextWrapping="Wrap" Margin="0,14,0,16"/><TextBlock Text="Im Alltag: Status abfragen, verbinden und trennen ohne Administratorrechte. Service-Konfiguration und Programmdateien bleiben geschützt." TextWrapping="Wrap"/><TextBlock Text="Nur Heimnetz behält den lokalen DNS für allgemeine Namen. Optional werden konfigurierte Heimnetz-Domänen an den Heim-DNS geleitet. Gesamter Verkehr verwendet die DNS-Angaben des importierten Profils." TextWrapping="Wrap" Margin="0,16,0,0" Foreground="{StaticResource MutedBrush}"/></StackPanel></TabItem>
+  <TabItem Header="Info"><StackPanel Margin="20"><Viewbox Width="48" Height="48" HorizontalAlignment="Left" Margin="0,0,0,10"><Path Fill="{StaticResource GreenBrush}" Data="M32,3 L57,13 55,35 Q52,51 32,61 Q12,51 9,35 L7,13 Z M17,29 L21,33 24,30 24,46 30,46 30,36 36,36 36,46 42,46 42,30 45,33 49,29 33,15 Z"/></Viewbox><TextBlock Text="HomeVPN" FontSize="28" FontWeight="SemiBold" Foreground="{StaticResource GreenBrush}"/><TextBlock Text="0.2.6 · Embedded WireGuard · Windows x64" Margin="0,8,0,16"/><TextBlock Text="WireGuard Windows 1.1 / WireGuardNT 1.1. Lizenzen liegen im Installationsordner unter licenses." TextWrapping="Wrap"/><TextBlock Text="Keine separate WireGuard-Anwendung erforderlich." TextWrapping="Wrap" Margin="0,14,0,0"/></StackPanel></TabItem>
+ </TabControl>
+ <StackPanel Grid.Row="2" Margin="0,12,0,0"><TextBlock x:Name="ValidationText" TextWrapping="Wrap" Foreground="{StaticResource RedBrush}" Margin="0,0,0,8"/><StackPanel Orientation="Horizontal" HorizontalAlignment="Right"><Button Content="Abbrechen" Click="Cancel_Click" Style="{StaticResource SecondaryButton}" Margin="0,0,8,0"/><Button Content="Speichern" Click="Save_Click" Style="{StaticResource PrimaryButton}" Padding="20,10" FontSize="13"/></StackPanel></StackPanel>
+ </Grid>
 </Window>

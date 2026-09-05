@@ -1,36 +1,24 @@
 name: release
-
 on:
   push:
-    tags:
-      - 'v*'
-
+    tags: ['v*']
 permissions:
   contents: write
-
 jobs:
   release:
     runs-on: windows-latest
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
-      - run: dotnet restore HomeVPN.sln
-      - name: Publish
-        run: >-
-          dotnet publish src/HomeVpn.App/HomeVpn.App.csproj
-          -c Release
-          -r win-x64
-          --self-contained true
-          -p:PublishSingleFile=true
-          -p:IncludeNativeLibrariesForSelfExtract=true
-          -p:PublishTrimmed=false
-          -p:DebugType=None
-          -p:DebugSymbols=false
-          -o artifacts/HomeVPN-win-x64
-      - name: Create release
+      - name: Build, test and package pinned runtime
+        shell: pwsh
+        run: ./scripts/Build-Installer.ps1
+      - name: Create draft release for signing review
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "${{ github.ref_name }}" artifacts/HomeVPN-win-x64/HomeVPN.exe --generate-notes --title "${{ github.ref_name }}"
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: gh release create $env:RELEASE_TAG artifacts/installer/HomeVPN-Setup-win-x64.exe artifacts/installer/HomeVPN.msi --draft --generate-notes --title $env:RELEASE_TAG

@@ -1,66 +1,12 @@
-<Window x:Class="HomeVpn.Views.ImportProfileWindow"
-        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="WireGuard-Konfiguration importieren"
-        Width="650" Height="650" MinWidth="600" MinHeight="600"
-        WindowStartupLocation="CenterOwner" ResizeMode="CanResizeWithGrip">
-    <ScrollViewer VerticalScrollBarVisibility="Auto">
-        <Grid Margin="24">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-            </Grid.RowDefinitions>
-
-            <StackPanel Grid.Row="0" Margin="0,0,0,20">
-                <TextBlock Text="WireGuard-Profil einrichten" FontSize="23" FontWeight="Bold"/>
-                <TextBlock x:Name="SourceText" Margin="0,7,0,0" Foreground="{StaticResource MutedBrush}" FontSize="12" TextWrapping="Wrap"/>
-            </StackPanel>
-
-            <Border Grid.Row="1" Background="{StaticResource CardBrush}" CornerRadius="16" Padding="20" Margin="0,0,0,14">
-                <StackPanel>
-                    <TextBlock Text="Profilname" FontWeight="SemiBold"/>
-                    <TextBox x:Name="DisplayNameBox" Margin="0,7,0,15" Padding="10,8" FontSize="13"/>
-                    <TextBlock Text="WireGuard-Tunnelname" FontWeight="SemiBold"/>
-                    <TextBox x:Name="TunnelNameBox" Margin="0,7,0,6" Padding="10,8" FontSize="13"/>
-                    <TextBlock Text="Aus diesem Namen werden zwei lokale Dienste erzeugt: &lt;Name&gt; und &lt;Name&gt;-Full. Beide verwenden dieselben Schlüssel und denselben FRITZ!Box-Peer."
-                               Foreground="{StaticResource MutedBrush}" FontSize="11" TextWrapping="Wrap"/>
-                </StackPanel>
-            </Border>
-
-            <Border Grid.Row="2" Background="{StaticResource CardBrush}" CornerRadius="16" Padding="20" Margin="0,0,0,14">
-                <StackPanel>
-                    <TextBlock Text="Heimnetz über VPN (Split Tunnel)" FontWeight="SemiBold"/>
-                    <TextBlock Text="CIDR-Netze, die im Modus „Nur Heimnetz“ über WireGuard geroutet werden. Bei einer typischen FRITZ!Box ist das z. B. 192.168.178.0/24. Erkannte Werte sind nur Vorschläge und sollten geprüft werden."
-                               Foreground="{StaticResource MutedBrush}" FontSize="11" TextWrapping="Wrap" Margin="0,5,0,9"/>
-                    <TextBox x:Name="HomeCidrsBox" AcceptsReturn="True" MinHeight="82" Padding="10,8" FontFamily="Consolas" FontSize="12" VerticalScrollBarVisibility="Auto"/>
-                    <TextBlock x:Name="CurrentNetworkText" Foreground="{StaticResource MutedBrush}" FontSize="11" Margin="0,9,0,0" TextWrapping="Wrap"/>
-                </StackPanel>
-            </Border>
-
-            <Border Grid.Row="3" Background="#EEF6FF" BorderBrush="#C8DFF5" BorderThickness="1" CornerRadius="14" Padding="15" Margin="0,0,0,14">
-                <TextBlock Text="Full Tunnel setzt AllowedIPs lokal auf 0.0.0.0/0 (und bei erkannter IPv6-Konfiguration zusätzlich ::/0). WireGuard for Windows aktiviert bei /0-Routen seine Full-Tunnel-/Kill-Switch-Semantik."
-                           Foreground="{StaticResource MutedBrush}" FontSize="11" TextWrapping="Wrap"/>
-            </Border>
-
-            <StackPanel Grid.Row="4" Margin="2,4,0,10">
-                <CheckBox x:Name="HomeExclusionCheck" Content="Aktuelles Netzwerk für genau dieses Profil als „Zuhause“ automatisch ausschließen, wenn es zu einem Heimnetz-CIDR passt" FontSize="12"/>
-                <CheckBox x:Name="MakePrimaryCheck" Content="Dieses Profil als Standard-VPN verwenden" Margin="0,10,0,0" FontSize="12"/>
-            </StackPanel>
-            <CheckBox x:Name="AutostartCheck" Grid.Row="5" Content="Home VPN beim Windows-Login starten und die gespeicherten Profilzustände wiederherstellen"
-                      IsChecked="True" Margin="2,0,0,18" FontSize="12"/>
-
-            <TextBlock x:Name="ValidationText" Grid.Row="6" Foreground="{StaticResource RedBrush}" FontSize="11" Margin="0,0,0,12" TextWrapping="Wrap"/>
-
-            <StackPanel Grid.Row="7" Orientation="Horizontal" HorizontalAlignment="Right">
-                <Button Content="Abbrechen" Style="{StaticResource SecondaryButton}" Margin="0,0,8,0" Click="Cancel_Click"/>
-                <Button Content="Importieren und installieren" Style="{StaticResource PrimaryButton}" Padding="20,10" FontSize="13" Click="Import_Click"/>
-            </StackPanel>
-        </Grid>
-    </ScrollViewer>
+<Window x:Class="HomeVpn.Views.ImportProfileWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Title="Verbindung einrichten · HomeVPN" Width="640" Height="610" MinWidth="560" MinHeight="460" WindowStartupLocation="CenterOwner">
+ <Grid Margin="24"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+  <StackPanel Margin="0,0,0,16"><TextBlock Text="Ihre Verbindung nach Hause" FontSize="24" FontWeight="SemiBold"/><TextBlock x:Name="SourceText" TextWrapping="Wrap" FontSize="11" Foreground="{StaticResource MutedBrush}" Margin="0,6,0,0"/></StackPanel>
+  <TabControl x:Name="Steps" Grid.Row="1">
+   <TabItem Header="1 · Verbindung"><StackPanel Margin="18"><TextBlock Text="Wie soll diese Verbindung heißen?" FontSize="16" FontWeight="SemiBold"/><TextBox x:Name="DisplayNameBox" MaxLength="80" Margin="0,10,0,20"/><TextBox x:Name="TunnelNameBox" Visibility="Collapsed"/><CheckBox x:Name="MakePrimaryCheck" Content="Als Standard-VPN verwenden"/><TextBlock Text="Weitere Verbindungen können Sie jederzeit hinzufügen. Die Schlüssel bleiben auf diesem PC." TextWrapping="Wrap" Foreground="{StaticResource MutedBrush}" Margin="0,20,0,0"/></StackPanel></TabItem>
+   <TabItem Header="2 · Routing"><Grid Margin="18"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition/><RowDefinition Height="Auto"/></Grid.RowDefinitions><TextBlock Text="Welche entfernten Netze sollen erreichbar sein?" FontSize="16" FontWeight="SemiBold" TextWrapping="Wrap"/><TextBlock Grid.Row="1" Text="Zielnetze prüfen, zum Beispiel 192.168.178.0/24. Der erste Test verwendet ausschließlich diese Netze und lässt Ihren Internetzugang lokal." TextWrapping="Wrap" Margin="0,8,0,10" Foreground="{StaticResource MutedBrush}"/><TextBox Grid.Row="2" x:Name="HomeCidrsBox" AcceptsReturn="True" FontFamily="Consolas" VerticalScrollBarVisibility="Auto"/><Button Grid.Row="3" Content="Optional: Heimnetz-DNS …" Click="ConfigureDns_Click" Style="{StaticResource SecondaryButton}" HorizontalAlignment="Left" Margin="0,10,0,0"/></Grid></TabItem>
+   <TabItem Header="3 · Netzwerk"><StackPanel Margin="18"><TextBlock x:Name="CurrentNetworkText" TextWrapping="Wrap" Margin="0,0,0,18"/><CheckBox x:Name="HomeExclusionCheck"><TextBlock Text="In diesem Netzwerk nicht automatisch verbinden" TextWrapping="Wrap"/></CheckBox><TextBlock Text="Sie können später mit „Trotzdem verbinden“ eine Ausnahme für die aktuelle Netzwerksitzung setzen." TextWrapping="Wrap" Foreground="{StaticResource MutedBrush}" Margin="0,10,0,20"/><CheckBox x:Name="AutostartCheck" IsChecked="True"><TextBlock Text="Nach der Windows-Anmeldung gespeicherte VPN-Policy anwenden" TextWrapping="Wrap"/></CheckBox></StackPanel></TabItem>
+   <TabItem Header="4 · Einrichten"><StackPanel Margin="18"><TextBlock Text="Bereit für den Verbindungstest" FontSize="19" FontWeight="SemiBold"/><TextBlock Text="HomeVPN schützt Ihre Konfiguration, richtet zwei eigene Tunnel-Dienste ein und testet zuerst „Nur Heimnetz“. Dafür ist einmalig eine Windows-Administratorfreigabe erforderlich." TextWrapping="Wrap" Margin="0,12,0,18"/><TextBlock Text="Ein nicht erreichbarer Peer verhindert die Installation nicht. Das Ergebnis unterscheidet Runtime, Service, Adapter, Routen und Handshake." TextWrapping="Wrap" Foreground="{StaticResource MutedBrush}"/></StackPanel></TabItem>
+  </TabControl>
+  <StackPanel Grid.Row="2" Margin="0,14,0,0"><TextBlock x:Name="ValidationText" TextWrapping="Wrap" Foreground="{StaticResource RedBrush}" Margin="0,0,0,8"/><Grid><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><Button Content="Abbrechen" Click="Cancel_Click" Style="{StaticResource SecondaryButton}" HorizontalAlignment="Left"/><Button Grid.Column="1" Content="Weiter" Click="Next_Click" Style="{StaticResource SecondaryButton}" Margin="0,0,8,0"/><Button Grid.Column="2" Content="Einrichten und testen" Click="Import_Click" Style="{StaticResource PrimaryButton}" FontSize="13" Padding="16,10"/></Grid></StackPanel>
+ </Grid>
 </Window>

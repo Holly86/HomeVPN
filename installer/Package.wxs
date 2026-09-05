@@ -1,0 +1,39 @@
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs" xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
+ <Package Name="HomeVPN" Manufacturer="HomeVPN contributors" Version="0.2.6" UpgradeCode="4E463BB7-6F36-479A-9C9A-F550A0CA6F06" Scope="perMachine" Language="1031">
+  <MajorUpgrade DowngradeErrorMessage="Eine neuere HomeVPN-Version ist bereits installiert." Schedule="afterInstallInitialize"/>
+  <MediaTemplate EmbedCab="yes"/>
+  <Icon Id="AppIcon" SourceFile="assets/HomeVPN.ico"/>
+  <Property Id="ARPPRODUCTICON" Value="AppIcon"/>
+  <Property Id="KEEP_PROFILES" Value="1" Secure="yes"/>
+  <StandardDirectory Id="ProgramFiles64Folder"><Directory Id="INSTALLFOLDER" Name="HomeVPN">
+   <Component Id="AppFiles" Guid="*"><File Id="AppExe" Source="artifacts/HomeVPN/HomeVPN.exe" KeyPath="yes"/></Component>
+   <Directory Id="RuntimeFolder" Name="Runtime"><Directory Id="Runtime64" Name="x64">
+    <Component Id="RuntimeFiles" Guid="*"><File Id="ServiceExe" Source="artifacts/HomeVPN/Runtime/x64/HomeVPN.TunnelService.exe" KeyPath="yes"/></Component>
+    <Component Id="TunnelDll" Guid="*"><File Source="artifacts/HomeVPN/Runtime/x64/tunnel.dll" KeyPath="yes"/></Component>
+    <Component Id="DriverDll" Guid="*"><File Source="artifacts/HomeVPN/Runtime/x64/wireguard.dll" KeyPath="yes"/></Component>
+    <Component Id="RuntimeHashes" Guid="*"><File Source="artifacts/HomeVPN/Runtime/x64/native-hashes.json" KeyPath="yes"/></Component>
+   </Directory></Directory>
+   <Directory Id="Licenses" Name="licenses"><Component Id="WixLicense" Guid="*"><File Source="artifacts/HomeVPN/licenses/WiX.txt" KeyPath="yes"/></Component><Component Id="LicenseFiles" Guid="*"><File Source="artifacts/HomeVPN/licenses/HomeVPN.txt" KeyPath="yes"/></Component><Component Id="WgLicense" Guid="*"><File Source="artifacts/HomeVPN/licenses/WireGuard-Windows.txt" KeyPath="yes"/></Component><Component Id="NtLicense" Guid="*"><File Source="artifacts/HomeVPN/licenses/WireGuardNT.txt" KeyPath="yes"/></Component></Directory>
+  </Directory></StandardDirectory>
+  <StandardDirectory Id="ProgramMenuFolder"><Directory Id="AppMenu" Name="HomeVPN"><Component Id="Shortcut" Guid="*"><Shortcut Id="StartMenu" Name="HomeVPN" Target="[#AppExe]" WorkingDirectory="INSTALLFOLDER" Icon="AppIcon"/><RemoveFolder Id="RemoveMenu" On="uninstall"/><RegistryValue Root="HKLM" Key="Software\HomeVPN" Name="Installed" Type="integer" Value="1" KeyPath="yes"/></Component></Directory></StandardDirectory>
+  <Feature Id="Main" Title="HomeVPN" Level="1"><ComponentRef Id="AppFiles"/><ComponentRef Id="RuntimeFiles"/><ComponentRef Id="TunnelDll"/><ComponentRef Id="DriverDll"/><ComponentRef Id="RuntimeHashes"/><ComponentRef Id="LicenseFiles"/><ComponentRef Id="WgLicense"/><ComponentRef Id="NtLicense"/><ComponentRef Id="WixLicense"/><ComponentRef Id="Shortcut"/></Feature>
+  <Binary Id="Maintenance" SourceFile="artifacts/HomeVPN/Runtime/x64/HomeVPN.TunnelService.exe"/>
+  <CustomAction Id="StopOwned" BinaryRef="Maintenance" ExeCommand="--maintenance remove" Execute="deferred" Impersonate="no" Return="check"/>
+  <CustomAction Id="RestoreOwned" BinaryRef="Maintenance" ExeCommand="--maintenance restore" Execute="deferred" Impersonate="no" Return="check"/>
+  <CustomAction Id="PurgeOwned" BinaryRef="Maintenance" ExeCommand="--maintenance purge" Execute="commit" Impersonate="no" Return="check"/>
+  <CustomAction Id="RollbackRestore" BinaryRef="Maintenance" ExeCommand="--maintenance restore" Execute="rollback" Impersonate="no" Return="ignore"/>
+  <CustomAction Id="UserCleanup" BinaryRef="Maintenance" ExeCommand="--user-cleanup [UserSID]" Execute="deferred" Impersonate="yes" Return="check"/>
+  <CustomAction Id="RemoveAutostart" BinaryRef="Maintenance" ExeCommand="--maintenance uninstall" Execute="commit" Impersonate="no" Return="check"/>
+  <InstallExecuteSequence>
+   <Custom Action="UserCleanup" Before="StopOwned" Condition="REMOVE~=&quot;ALL&quot; AND NOT UPGRADINGPRODUCTCODE"/>
+
+   <Custom Action="RollbackRestore" Before="StopOwned" Condition="Installed"/>
+   <Custom Action="StopOwned" Before="RemoveFiles" Condition="Installed"/>
+   <Custom Action="RestoreOwned" After="InstallFiles" Condition="NOT REMOVE~=&quot;ALL&quot;"/>
+   <Custom Action="PurgeOwned" Before="InstallFinalize" Condition="REMOVE~=&quot;ALL&quot; AND KEEP_PROFILES=&quot;0&quot; AND NOT UPGRADINGPRODUCTCODE"/>
+   <Custom Action="RemoveAutostart" Before="PurgeOwned" Condition="REMOVE~=&quot;ALL&quot; AND NOT UPGRADINGPRODUCTCODE"/>
+  </InstallExecuteSequence>
+  <ui:WixUI Id="WixUI_Minimal"/>
+  <WixVariable Id="WixUILicenseRtf" Value="installer/License.rtf"/>
+ </Package>
+</Wix>
