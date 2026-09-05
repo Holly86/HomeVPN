@@ -1,0 +1,36 @@
+name: release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - run: dotnet restore HomeVPN.sln
+      - name: Publish
+        run: >-
+          dotnet publish src/HomeVpn.App/HomeVpn.App.csproj
+          -c Release
+          -r win-x64
+          --self-contained true
+          -p:PublishSingleFile=true
+          -p:IncludeNativeLibrariesForSelfExtract=true
+          -p:PublishTrimmed=false
+          -p:DebugType=None
+          -p:DebugSymbols=false
+          -o artifacts/HomeVPN-win-x64
+      - name: Create release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "${{ github.ref_name }}" artifacts/HomeVPN-win-x64/HomeVPN.exe --generate-notes --title "${{ github.ref_name }}"
