@@ -6,7 +6,7 @@ using HomeVpn.Views;
 
 namespace HomeVpn;
 
-public partial class App : Application
+public partial class App : System.Windows.Application
 {
     private Mutex? _mutex;
     private bool _ownsMutex;
