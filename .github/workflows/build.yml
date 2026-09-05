@@ -1,0 +1,48 @@
+name: build
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore
+        run: dotnet restore HomeVPN.sln
+
+      - name: Build
+        run: dotnet build HomeVPN.sln -c Release --no-restore
+
+      - name: Publish single-file Windows app
+        run: >-
+          dotnet publish src/HomeVpn.App/HomeVpn.App.csproj
+          -c Release
+          -r win-x64
+          --self-contained true
+          -p:PublishSingleFile=true
+          -p:IncludeNativeLibrariesForSelfExtract=true
+          -p:PublishTrimmed=false
+          -p:DebugType=None
+          -p:DebugSymbols=false
+          -o artifacts/HomeVPN-win-x64
+
+      - name: Upload application artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: HomeVPN-win-x64
+          path: artifacts/HomeVPN-win-x64/HomeVPN.exe
+          if-no-files-found: error
