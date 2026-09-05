@@ -13,7 +13,7 @@ public sealed class VpnPolicyEngine : IDisposable
     private readonly WindowsServiceManager _serviceManager;
     private readonly SemaphoreSlim _gate = new(1, 1);
     private readonly Dictionary<Guid, string> _manualOverrideFingerprints = [];
-    private Timer? _timer;
+    private System.Threading.Timer? _timer;
     private string? _lastNetworkFingerprint;
     private string? _lastRecommendationFingerprint;
     private bool _disposed;
@@ -41,7 +41,7 @@ public sealed class VpnPolicyEngine : IDisposable
     {
         NetworkChange.NetworkAddressChanged += OnNetworkChanged;
         NetworkChange.NetworkAvailabilityChanged += OnNetworkAvailabilityChanged;
-        _timer = new Timer(_ => _ = RefreshAsync(), null, TimeSpan.Zero, TimeSpan.FromSeconds(2));
+        _timer = new System.Threading.Timer(_ => _ = RefreshAsync(), null, TimeSpan.Zero, TimeSpan.FromSeconds(2));
     }
 
     public void SetSuspended(bool suspended) => _suspended = suspended;
