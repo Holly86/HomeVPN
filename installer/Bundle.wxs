@@ -1,0 +1,7 @@
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs" xmlns:bal="http://wixtoolset.org/schemas/v4/wxs/bal">
+ <Bundle Name="HomeVPN" Manufacturer="HomeVPN contributors" Version="0.2.6" UpgradeCode="105D15B7-ED2E-4149-9BFB-538D3702DC76" IconSourceFile="assets/HomeVPN.ico">
+  <Variable Name="KEEP_PROFILES" Type="numeric" Value="1" bal:Overridable="yes"/>
+  <BootstrapperApplication><bal:WixStandardBootstrapperApplication LicenseUrl="https://github.com/Holly86/HomeVPN/blob/main/LICENSE" Theme="hyperlinkLicense" ThemeFile="installer/Theme.xml" LocalizationFile="installer/de-de.wxl" LogoFile="assets/HomeVPN-256.png" SuppressOptionsUI="yes" LaunchTarget="[ProgramFiles64Folder]HomeVPN\HomeVPN.exe"/></BootstrapperApplication>
+  <Chain><MsiPackage SourceFile="artifacts/installer/HomeVPN.msi"><MsiProperty Name="KEEP_PROFILES" Value="[KEEP_PROFILES]"/></MsiPackage></Chain>
+ </Bundle>
+</Wix>

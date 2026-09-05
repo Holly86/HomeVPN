@@ -19,6 +19,8 @@ public partial class MainWindow : Window
     public MainWindow(AppServices services)
     {
         InitializeComponent();
+        MaxHeight = SystemParameters.WorkArea.Height - 20;
+        Height = Math.Min(Height, MaxHeight);
         _services = services;
         _services.Settings.NormalizeProfileSelection();
         ProfileSelector.ItemsSource = _services.Settings.Profiles;
@@ -29,6 +31,14 @@ public partial class MainWindow : Window
             await _services.PolicyEngine.RefreshAsync(force: true);
         };
         Closing += MainWindow_Closing;
+        SizeChanged += (_, _) =>
+        {
+            // Keep primary actions and a usable dynamic profile list on small laptop work areas.
+            bool compact = ActualHeight < 540;
+            LayoutRoot.Margin = new Thickness(compact ? 12 : 20);
+            BrandHeader.Visibility = compact ? Visibility.Collapsed : Visibility.Visible;
+            ProfileCard.Padding = new Thickness(compact ? 8 : 16);
+        };
     }
 
     public void ShowFromTray()
@@ -96,18 +106,19 @@ public partial class MainWindow : Window
             var text = (Brush)FindResource("TextBrush");
             var muted = (Brush)FindResource("MutedBrush");
 
-            ProfileSelector.ItemsSource = null;
-            ProfileSelector.ItemsSource = _services.Settings.Profiles;
+            if (!ReferenceEquals(ProfileSelector.ItemsSource, _services.Settings.Profiles))
+                ProfileSelector.ItemsSource = _services.Settings.Profiles;
             ProfileSelector.SelectedItem = profile;
             ProfileSelector.IsEnabled = _services.Settings.Profiles.Count > 0;
             PrimaryProfileChip.Visibility = profile is not null && profile.Id == _services.Settings.PrimaryProfileId
                 ? Visibility.Visible
                 : Visibility.Collapsed;
 
-            FooterText.Text = profile is null
-                ? "Kein VPN-Profil importiert"
-                : $"{_services.Settings.Profiles.Count} Profil(e) · {profile.HomeTunnelName} / {profile.FullTunnelName}";
-            ImportButton.Content = profile is null ? "VPN-Konfiguration importieren" : "Weitere Verbindung importieren";
+            FooterText.Text = profile is null ? "Noch keine Verbindung" : $"{_services.Settings.Profiles.Count} Verbindung(en) · Embedded WireGuard";
+            ImportButton.Content = "Verbindung hinzufügen";
+            OtherProfiles.ItemsSource = state.Profiles.Where(p => p.Profile.Id != profile?.Id).Select(p => new { p.Profile,
+                Summary = $"Gewünscht: {(p.DesiredEnabled ? "Ein" : "Aus")} · Effektiv: {(p.EffectiveEnabled ? "Verbunden" : "Getrennt")} · {(p.RoutingMode == RoutingMode.HomeOnly ? "Nur Heimnetz" : "Gesamter Verkehr")}" + (p.Reason == PolicyReason.RouteConflict ? " · Routing-Konflikt" : p.Reason == PolicyReason.ExcludedNetwork ? " · Netzwerkregel" : ""),
+                Action = p.EffectiveEnabled || p.DesiredEnabled && p.Reason != PolicyReason.ExcludedNetwork ? "Trennen" : p.Reason == PolicyReason.ExcludedNetwork ? "Trotzdem verbinden" : "Verbinden" }).ToArray();
 
             NetworkValue.Text = state.Network.DisplayName;
             RoutingValue.Text = state.RoutingMode == RoutingMode.HomeOnly ? "Nur Heimnetz" : "Gesamter Verkehr";
@@ -148,6 +159,20 @@ public partial class MainWindow : Window
                 return;
             }
 
+            if (active?.State is WindowsServiceState.StartPending or WindowsServiceState.StopPending)
+            {
+                var starting = active.State == WindowsServiceState.StartPending;
+                TitleText.Text = starting ? "Verbindung wird aufgebaut …" : "Verbindung wird getrennt …";
+                TitleText.Foreground = text;
+                SubtitleText.Text = profile.DisplayName;
+                StatusBadge.Background = muted;
+                StatusBadgeText.Text = "…";
+                ConnectionValue.Text = starting ? "Verbindet …" : "Trennt …";
+                PrimaryButtonText.Text = "Bitte warten …";
+                PrimaryButton.IsEnabled = false;
+                return;
+            }
+
             if (state.EffectiveEnabled)
             {
                 TitleText.Text = $"{profile.DisplayName} ist verbunden";
@@ -155,6 +180,8 @@ public partial class MainWindow : Window
                 SubtitleText.Text = state.ManualOverrideActive
                     ? $"Verbunden mit manuellem Override im Netzwerk „{state.Network.DisplayName}“."
                     : "Der ausgewählte WireGuard-Tunnel ist aktiv.";
+                if (profile.SplitDns.Enabled && profile.RoutingMode == RoutingMode.HomeOnly)
+                    SubtitleText.Text += " " + SplitDnsRuntime.DisplayStatus(profile.Id) + ".";
                 StatusBadge.Background = green;
                 StatusBadgeText.Text = "✓";
                 ConnectionValue.Text = "Verbunden";
@@ -204,12 +231,12 @@ public partial class MainWindow : Window
                 case PolicyReason.RouteConflict:
                     TitleText.Text = $"{profile.DisplayName} wartet";
                     TitleText.Foreground = text;
-                    SubtitleText.Text = "Eine andere Full-Tunnel-Verbindung ist aktiv. Mehrere Home-only-Tunnel dürfen parallel laufen; Full-Tunnel wird exklusiv behandelt.";
-                    PrimaryButtonText.Text = "Andere Full-Tunnel-Verbindung zuerst trennen";
-                    PrimaryButton.IsEnabled = false;
+                    SubtitleText.Text = "Zielnetze oder Heimnetz-DNS-Domänen überschneiden sich, oder ein anderer Tunnel beansprucht den Verkehr. Der gewünschte Zustand bleibt erhalten.";
+                    PrimaryButtonText.Text = "Verbindungswunsch ausschalten";
+                    PrimaryButton.IsEnabled = true;
                     ShowPolicyBanner(
                         "Routing-Konflikt vermieden",
-                        "Home VPN verhindert konkurrierende /0-Routen und mehrere gleichzeitige Kill-Switch-Full-Tunnel.",
+                        "Andere Verbindung trennen oder überschneidende Zielnetze und DNS-Domänen prüfen. Fremde WireGuard-Verbindungen bleiben unverändert.",
                         showOverrideButton: false);
                     break;
 
@@ -271,14 +298,14 @@ public partial class MainWindow : Window
         try
         {
             PrimaryButton.IsEnabled = false;
-            if (state.EffectiveEnabled)
+            if (state.EffectiveEnabled || state.Reason == PolicyReason.RouteConflict)
                 await _services.PolicyEngine.DisconnectAsync();
             else
                 await _services.PolicyEngine.ConnectAsync(state.Reason == PolicyReason.ExcludedNetwork && state.CanManualOverride);
         }
         catch (Exception ex)
         {
-            MessageBox.Show(this, ex.Message, "Home VPN", MessageBoxButton.OK, MessageBoxImage.Error);
+            ErrorDialog.Show(this, ex);
         }
         finally
         {
@@ -294,7 +321,7 @@ public partial class MainWindow : Window
         }
         catch (Exception ex)
         {
-            MessageBox.Show(this, ex.Message, "Home VPN", MessageBoxButton.OK, MessageBoxImage.Error);
+            ErrorDialog.Show(this, ex);
         }
     }
 
@@ -310,7 +337,7 @@ public partial class MainWindow : Window
         }
         catch (Exception ex)
         {
-            MessageBox.Show(this, ex.Message, "Routing konnte nicht geändert werden", MessageBoxButton.OK, MessageBoxImage.Error);
+            ErrorDialog.Show(this, ex);
         }
     }
 
@@ -325,11 +352,12 @@ public partial class MainWindow : Window
         }
         catch (Exception ex)
         {
-            MessageBox.Show(this, ex.Message, "VPN-Profil konnte nicht ausgewählt werden", MessageBoxButton.OK, MessageBoxImage.Error);
+            ErrorDialog.Show(this, ex);
         }
     }
 
     private async void ImportButton_Click(object sender, RoutedEventArgs e) => await ImportConfigurationAsync();
+    public async void AddProfile() => await ImportConfigurationAsync();
 
     private async Task ImportConfigurationAsync()
     {
@@ -346,18 +374,16 @@ public partial class MainWindow : Window
         WireGuardConfig config;
         try
         {
-            config = WireGuardConfig.Parse(dialog.FileName);
+            config = await Task.Run(() => WireGuardConfig.Parse(dialog.FileName));
         }
         catch (Exception ex)
         {
-            MessageBox.Show(this, ex.Message, "Ungültige WireGuard-Konfiguration", MessageBoxButton.OK, MessageBoxImage.Error);
+            ErrorDialog.Show(this, ex);
             return;
         }
 
-        var network = _services.NetworkDetector.GetSnapshot();
+        var network = await Task.Run(() => _services.NetworkDetector.GetSnapshot());
         var candidates = config.DetectHomeCidrs().ToList();
-        if (candidates.Count == 0)
-            candidates.AddRange(_services.NetworkDetector.GetPrivateIpv4Networks(network));
 
         var defaultName = GetUniqueDefaultName(Path.GetFileNameWithoutExtension(dialog.FileName));
         var importWindow = new ImportProfileWindow(
@@ -373,20 +399,10 @@ public partial class MainWindow : Window
         if (importWindow.ShowDialog() != true)
             return;
 
-        var sanitized = WireGuardConfig.SanitizeTunnelName(importWindow.TunnelName);
-        var full = WireGuardConfig.SanitizeTunnelName(sanitized + "-Full");
-        if (_services.Settings.Profiles.Any(p =>
-                p.HomeTunnelName.Equals(sanitized, StringComparison.OrdinalIgnoreCase) ||
-                p.FullTunnelName.Equals(sanitized, StringComparison.OrdinalIgnoreCase) ||
-                p.HomeTunnelName.Equals(full, StringComparison.OrdinalIgnoreCase) ||
-                p.FullTunnelName.Equals(full, StringComparison.OrdinalIgnoreCase)))
-        {
-            MessageBox.Show(this, "Dieser technische Tunnelname ist bereits vergeben. Bitte wählen Sie beim Import einen anderen Namen.", "Tunnelname bereits vorhanden", MessageBoxButton.OK, MessageBoxImage.Warning);
-            return;
-        }
-
-        _services.PolicyEngine.SetSuspended(true);
-        IsEnabled = false;
+        await _services.PolicyEngine.SuspendAsync();
+        ImportButton.IsEnabled = false;
+        PrimaryButton.IsEnabled = false;
+        SubtitleText.Text = "Verbindung wird eingerichtet und geprüft …";
         try
         {
             var profile = await _services.ProfileInstaller.InstallAsync(
@@ -394,7 +410,7 @@ public partial class MainWindow : Window
                 importWindow.ProfileDisplayName,
                 importWindow.TunnelName,
                 importWindow.HomeCidrs,
-                oldProfile: null);
+                oldProfile: null, splitDns: importWindow.SplitDnsSettings);
 
             _services.Settings.Profiles.Add(profile);
             _services.Settings.SelectedProfileId = profile.Id;
@@ -409,29 +425,20 @@ public partial class MainWindow : Window
             _services.Autostart.SetEnabled(_services.Settings.StartWithWindows, _services.Installation.InstalledExecutablePath);
             ProfileSelector.Items.Refresh();
 
-            MessageBox.Show(
-                this,
-                $"„{profile.DisplayName}“ wurde installiert. Die Roh-Konfigurationsdatei wird von Home VPN nicht gespeichert.\n\nFür dieses Profil existieren ein Home-only- und ein Full-Tunnel-Dienst. Weitere Profile können unabhängig hinzugefügt und – im Home-only-Modus – parallel aktiviert werden.",
-                "VPN-Verbindung eingerichtet",
-                MessageBoxButton.OK,
-                MessageBoxImage.Information);
+            new SetupResultWindow(profile, _services) { Owner = this }.ShowDialog();
         }
         catch (OperationCanceledException ex)
         {
-            MessageBox.Show(this, ex.Message, "Einrichtung abgebrochen", MessageBoxButton.OK, MessageBoxImage.Information);
+            ErrorDialog.Show(this, ex);
         }
         catch (Exception ex)
         {
-            MessageBox.Show(
-                this,
-                $"Die VPN-Konfiguration konnte nicht installiert werden.\n\n{ex.Message}\n\nFalls MakeMeAdmin verwendet wird: temporäre Administratorrechte aktivieren und den Import erneut starten.",
-                "Home VPN",
-                MessageBoxButton.OK,
-                MessageBoxImage.Error);
+            ErrorDialog.Show(this, ex);
         }
         finally
         {
-            IsEnabled = true;
+            ImportButton.IsEnabled = true;
+            PrimaryButton.IsEnabled = true;
             _services.PolicyEngine.SetSuspended(false);
             await _services.PolicyEngine.RefreshAsync(force: true);
         }
@@ -439,7 +446,7 @@ public partial class MainWindow : Window
 
     private string GetUniqueDefaultName(string sourceName)
     {
-        var baseName = string.IsNullOrWhiteSpace(sourceName) ? "Home" : sourceName;
+        var baseName = string.IsNullOrWhiteSpace(sourceName) ? "VPN" : sourceName;
         var candidate = baseName;
         var suffix = 2;
         while (_services.Settings.Profiles.Any(x =>
@@ -453,43 +460,27 @@ public partial class MainWindow : Window
 
     private void AddDetectedHomeExclusion(VpnProfile profile, NetworkSnapshot network)
     {
-        foreach (var iface in network.Interfaces)
-        {
-            foreach (var address in iface.Addresses)
-            {
-                var homeCidr = profile.HomeCidrs
-                    .Select(x => Cidr.TryParse(x, out var parsed) ? parsed : null)
-                    .FirstOrDefault(x => x is not null && x.Contains(address));
-                if (homeCidr is null)
-                    continue;
-
-                var localCidr = iface.NetworkCidrs
-                    .Select(x => Cidr.TryParse(x, out var parsed) ? parsed : null)
-                    .FirstOrDefault(x => x is not null && x.Contains(address))?.ToString();
-
-                if (string.IsNullOrWhiteSpace(localCidr))
-                    continue;
-
-                var namePattern = network.IsWifi ? network.WifiSsid : null;
-                var alreadyExists = _services.Settings.ExcludedNetworks.Any(r =>
-                    r.AppliesTo(profile.Id) &&
-                    string.Equals(r.NetworkNamePattern, namePattern, StringComparison.OrdinalIgnoreCase) &&
-                    string.Equals(r.SubnetCidr, localCidr, StringComparison.OrdinalIgnoreCase));
-                if (alreadyExists)
-                    return;
-
-                _services.Settings.ExcludedNetworks.Add(new ExcludedNetworkRule
-                {
-                    Name = $"Zuhause · {profile.DisplayName}",
-                    NetworkNamePattern = namePattern,
-                    SubnetCidr = localCidr,
-                    AllowManualOverride = true,
-                    ProfileIds = [profile.Id]
-                });
-                return;
-            }
-        }
+        var subnet = network.LocalNetworks.FirstOrDefault(x => Cidr.TryParse(x, out var c) && c!.Network.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork);
+        if (!network.HasUsableNetwork || subnet is null) return;
+        _services.Settings.ExcludedNetworks.Add(new ExcludedNetworkRule { Name = "Zuhause · " + profile.DisplayName,
+            NetworkNamePattern = network.IsWifi ? network.WifiSsid : null, SubnetCidr = subnet, AllowManualOverride = true, ProfileIds = [profile.Id] });
     }
 
     private void SettingsButton_Click(object sender, RoutedEventArgs e) => OpenSettings();
+    private async void OtherSelect_Click(object sender, RoutedEventArgs e)
+    {
+        try { if (sender is Button { Tag: Guid id }) await _services.PolicyEngine.SelectProfileAsync(id); }
+        catch (Exception ex) { ErrorDialog.Show(this, ex); }
+    }
+    private async void OtherToggle_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button { Tag: Guid id } button) return;
+        button.IsEnabled = false;
+        try {
+            var state = _services.PolicyEngine.CurrentState.Profiles.First(x => x.Profile.Id == id);
+            if (state.EffectiveEnabled || state.DesiredEnabled && state.Reason != PolicyReason.ExcludedNetwork) await _services.PolicyEngine.DisconnectAsync(id);
+            else await _services.PolicyEngine.ConnectAsync(state.CanManualOverride, id);
+        } catch (Exception ex) { ErrorDialog.Show(this, ex); }
+        finally { button.IsEnabled = true; }
+    }
 }

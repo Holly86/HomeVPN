@@ -25,12 +25,12 @@ public sealed class TrayService : IDisposable
         _profileMenu = new Forms.ToolStripMenuItem("Verbindung");
 
         _toggleItem = new Forms.ToolStripMenuItem("VPN einschalten");
-        _toggleItem.Click += async (_, _) => await ToggleAsync();
+        _toggleItem.Click += async (_, _) => await RunSafelyAsync(ToggleAsync);
 
         _homeOnlyItem = new Forms.ToolStripMenuItem("Nur Heimnetz");
-        _homeOnlyItem.Click += async (_, _) => await _services.PolicyEngine.SetRoutingModeAsync(RoutingMode.HomeOnly);
+        _homeOnlyItem.Click += async (_, _) => await RunSafelyAsync(() => _services.PolicyEngine.SetRoutingModeAsync(RoutingMode.HomeOnly));
         _fullTunnelItem = new Forms.ToolStripMenuItem("Gesamter Verkehr");
-        _fullTunnelItem.Click += async (_, _) => await _services.PolicyEngine.SetRoutingModeAsync(RoutingMode.FullTunnel);
+        _fullTunnelItem.Click += async (_, _) => await RunSafelyAsync(() => _services.PolicyEngine.SetRoutingModeAsync(RoutingMode.FullTunnel));
 
         var openItem = new Forms.ToolStripMenuItem("Home VPN öffnen");
         openItem.Click += (_, _) => ShowMainWindow();
@@ -55,7 +55,7 @@ public sealed class TrayService : IDisposable
 
         _notifyIcon = new Forms.NotifyIcon
         {
-            Icon = Drawing.SystemIcons.Shield,
+            Icon = new Drawing.Icon(System.Windows.Application.GetResourceStream(new Uri("pack://application:,,,/Assets/HomeVPN.ico")).Stream),
             Text = "Home VPN",
             Visible = true,
             ContextMenuStrip = menu
@@ -94,7 +94,7 @@ public sealed class TrayService : IDisposable
         var profile = state.SelectedProfile?.Profile ?? _services.Settings.GetSelectedProfile();
         var name = profile?.DisplayName ?? "Kein Profil";
 
-        RebuildProfileMenu(profile?.Id);
+        if (_notifyIcon.ContextMenuStrip?.Visible != true) RebuildProfileMenu(profile?.Id);
 
         _statusItem.Text = state.EffectiveEnabled
             ? $"{name} · verbunden · {(state.RoutingMode == RoutingMode.HomeOnly ? "Nur Heimnetz" : "Gesamter Verkehr")}" 
@@ -135,14 +135,14 @@ public sealed class TrayService : IDisposable
                 Checked = profile.Id == selectedProfileId,
                 Tag = profile.Id
             };
-            item.Click += async (_, _) =>
+            item.Click += async (_, _) => await RunSafelyAsync(async () =>
             {
                 if (item.Tag is Guid id)
                 {
                     await _services.PolicyEngine.SelectProfileAsync(id);
                     ShowMainWindow();
                 }
-            };
+            });
             _profileMenu.DropDownItems.Add(item);
         }
     }
@@ -166,6 +166,11 @@ public sealed class TrayService : IDisposable
     }
 
     private void ShowMainWindow() => _mainWindow.ShowFromTray();
+    private async Task RunSafelyAsync(Func<Task> command)
+    {
+        try { await command(); }
+        catch (Exception ex) { ShowMainWindow(); ErrorDialog.Show(_mainWindow, ex); }
+    }
 
     public void Dispose()
     {

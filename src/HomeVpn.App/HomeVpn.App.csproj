@@ -4,11 +4,21 @@
     <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
     <UseWPF>true</UseWPF>
     <UseWindowsForms>true</UseWindowsForms>
+    <!-- WPF owns startup/DPI; WinForms is used only for NotifyIcon. The manifest
+         is intentional, so the WinForms ApplicationConfiguration analyzer does not apply. -->
+    <NoWarn>$(NoWarn);WFAC010</NoWarn>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <AssemblyName>HomeVPN</AssemblyName>
     <RootNamespace>HomeVpn</RootNamespace>
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>../../assets/HomeVPN.ico</ApplicationIcon>
+    <Version>0.2.6</Version>
   </PropertyGroup>
+  <ItemGroup>
+    <Resource Include="../../assets/HomeVPN.ico" Link="Assets/HomeVPN.ico" />
+    <Compile Remove="Models/*.cs;Core/*.cs;Infrastructure/WireGuardConfig.cs;Infrastructure/WindowsServiceManager.cs;Infrastructure/ProcessRunner.cs" />
+    <ProjectReference Include="../HomeVpn.Runtime/HomeVpn.Runtime.csproj" />
+  </ItemGroup>
 </Project>

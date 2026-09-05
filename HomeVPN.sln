@@ -1,18 +1,45 @@
-Microsoft Visual Studio Solution File, Format Version 12.00
+﻿Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HomeVpn.App", "src\HomeVpn.App\HomeVpn.App.csproj", "{5B1A0D45-2391-4E4A-88CC-381EE2B2026B}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{6C2C82C1-26DF-4F63-9B10-FC1322817C95}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HomeVpn.Runtime", "src\HomeVpn.Runtime\HomeVpn.Runtime.csproj", "{8AAD4E60-1E4C-4B4E-A816-9BFD31328898}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HomeVpn.TunnelService", "src\HomeVpn.TunnelService\HomeVpn.TunnelService.csproj", "{4BD7EF61-38CC-45ED-A636-25F938550C37}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{2B04C452-DB7E-47A6-B9F7-FC3C4304F000}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HomeVpn.Tests", "tests\HomeVpn.Tests\HomeVpn.Tests.csproj", "{F6A68688-5F27-4100-A0B4-37AA08C347D6}"
+EndProject
 Global
-    GlobalSection(SolutionConfigurationPlatforms) = preSolution
-        Debug|Any CPU = Debug|Any CPU
-        Release|Any CPU = Release|Any CPU
-    EndGlobalSection
-    GlobalSection(ProjectConfigurationPlatforms) = postSolution
-        {5B1A0D45-2391-4E4A-88CC-381EE2B2026B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-        {5B1A0D45-2391-4E4A-88CC-381EE2B2026B}.Debug|Any CPU.Build.0 = Debug|Any CPU
-        {5B1A0D45-2391-4E4A-88CC-381EE2B2026B}.Release|Any CPU.ActiveCfg = Release|Any CPU
-        {5B1A0D45-2391-4E4A-88CC-381EE2B2026B}.Release|Any CPU.Build.0 = Release|Any CPU
-    EndGlobalSection
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{5B1A0D45-2391-4E4A-88CC-381EE2B2026B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5B1A0D45-2391-4E4A-88CC-381EE2B2026B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5B1A0D45-2391-4E4A-88CC-381EE2B2026B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5B1A0D45-2391-4E4A-88CC-381EE2B2026B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8AAD4E60-1E4C-4B4E-A816-9BFD31328898}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8AAD4E60-1E4C-4B4E-A816-9BFD31328898}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8AAD4E60-1E4C-4B4E-A816-9BFD31328898}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8AAD4E60-1E4C-4B4E-A816-9BFD31328898}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4BD7EF61-38CC-45ED-A636-25F938550C37}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4BD7EF61-38CC-45ED-A636-25F938550C37}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4BD7EF61-38CC-45ED-A636-25F938550C37}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4BD7EF61-38CC-45ED-A636-25F938550C37}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F6A68688-5F27-4100-A0B4-37AA08C347D6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F6A68688-5F27-4100-A0B4-37AA08C347D6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F6A68688-5F27-4100-A0B4-37AA08C347D6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F6A68688-5F27-4100-A0B4-37AA08C347D6}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{8AAD4E60-1E4C-4B4E-A816-9BFD31328898} = {6C2C82C1-26DF-4F63-9B10-FC1322817C95}
+		{4BD7EF61-38CC-45ED-A636-25F938550C37} = {6C2C82C1-26DF-4F63-9B10-FC1322817C95}
+		{F6A68688-5F27-4100-A0B4-37AA08C347D6} = {2B04C452-DB7E-47A6-B9F7-FC3C4304F000}
+	EndGlobalSection
 EndGlobal

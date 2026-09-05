@@ -8,3 +8,4 @@ global using Application = System.Windows.Application;
 global using MessageBox = System.Windows.MessageBox;
 global using Brush = System.Windows.Media.Brush;
 global using OpenFileDialog = Microsoft.Win32.OpenFileDialog;
+global using Button = System.Windows.Controls.Button;
