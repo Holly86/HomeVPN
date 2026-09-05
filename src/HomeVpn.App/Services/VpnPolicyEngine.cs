@@ -123,7 +123,8 @@ public sealed class VpnPolicyEngine : IDisposable
 
             // A WireGuard for Windows full-tunnel service uses /0 routing and kill-switch semantics.
             // To avoid ambiguous routing and competing kill switches, only one FullTunnel profile is
-            // allowed to be effective at a time. Home-only profiles can otherwise run in parallel.
+            // allowed to be effective at a time. Home-only profiles can run in parallel only when
+            // their target CIDRs do not overlap.
             var fullTunnelCandidates = planned
                 .Where(x => x.ShouldRun && x.Profile.RoutingMode == RoutingMode.FullTunnel)
                 .ToList();
@@ -136,6 +137,10 @@ public sealed class VpnPolicyEngine : IDisposable
                 fullTunnelOwnerId = fullTunnelCandidates.FirstOrDefault(x => x.Profile.Id == selected)?.Profile.Id
                                     ?? fullTunnelCandidates.FirstOrDefault(x => x.Profile.Id == primary)?.Profile.Id
                                     ?? fullTunnelCandidates[0].Profile.Id;
+            }
+            else
+            {
+                ApplySplitTunnelRouteConflictPolicy(planned);
             }
 
             var states = new List<ProfileRuntimeState>();
@@ -184,6 +189,49 @@ public sealed class VpnPolicyEngine : IDisposable
         {
             _gate.Release();
         }
+    }
+
+    private void ApplySplitTunnelRouteConflictPolicy(List<ProfilePlan> planned)
+    {
+        var selected = _settings.SelectedProfileId;
+        var primary = _settings.PrimaryProfileId;
+
+        // Stable ordering makes the user's currently selected profile the winner when two
+        // Home-only profiles target the same/overlapping subnet. The Standard-VPN is next.
+        var candidates = planned
+            .Where(x => x.ShouldRun && x.Profile.RoutingMode == RoutingMode.HomeOnly)
+            .OrderByDescending(x => x.Profile.Id == selected)
+            .ThenByDescending(x => x.Profile.Id == primary)
+            .ToList();
+
+        var accepted = new List<ProfilePlan>();
+        foreach (var candidate in candidates)
+        {
+            if (accepted.Any(other => HomeRoutesOverlap(candidate.Profile, other.Profile)))
+            {
+                candidate.ShouldRun = false;
+                candidate.Reason = PolicyReason.RouteConflict;
+                continue;
+            }
+
+            accepted.Add(candidate);
+        }
+    }
+
+    private static bool HomeRoutesOverlap(VpnProfile left, VpnProfile right)
+    {
+        var leftCidrs = left.HomeCidrs
+            .Select(x => Cidr.TryParse(x, out var parsed) ? parsed : null)
+            .Where(x => x is not null)
+            .Cast<Cidr>()
+            .ToArray();
+        var rightCidrs = right.HomeCidrs
+            .Select(x => Cidr.TryParse(x, out var parsed) ? parsed : null)
+            .Where(x => x is not null)
+            .Cast<Cidr>()
+            .ToArray();
+
+        return leftCidrs.Any(a => rightCidrs.Any(a.Overlaps));
     }
 
     private ProfilePlan BuildPlan(VpnProfile profile, NetworkSnapshot network)
@@ -237,13 +285,13 @@ public sealed class VpnPolicyEngine : IDisposable
             }
             else if (plan.ShouldRun)
             {
-                var selected = plan.Profile.RoutingMode == RoutingMode.HomeOnly ? home : full;
+                var selectedService = plan.Profile.RoutingMode == RoutingMode.HomeOnly ? home : full;
                 var other = plan.Profile.RoutingMode == RoutingMode.HomeOnly ? full : home;
 
                 if (IsPotentiallyActive(other))
                     await _serviceManager.StopAsync(other.Name);
-                if (!selected.IsRunning)
-                    await _serviceManager.StartAsync(selected.Name);
+                if (!selectedService.IsRunning)
+                    await _serviceManager.StartAsync(selectedService.Name);
             }
             else
             {
