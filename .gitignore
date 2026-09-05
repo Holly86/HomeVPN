@@ -1,0 +1,36 @@
+# .NET / Visual Studio
+bin/
+obj/
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+artifacts/
+publish/
+
+# WireGuard / VPN secrets - NEVER COMMIT
+*.conf
+*.conf.dpapi
+*.key
+*.pem
+*.pfx
+*.p12
+secrets/
+vpn-config/
+**/staging/
+
+# Local app state
+settings.json
+*.local.json
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Future embedded runtime staging / downloaded third-party binaries
+vendor/
+runtime-cache/
+*.nupkg
