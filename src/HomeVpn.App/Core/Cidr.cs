@@ -46,6 +46,16 @@ public sealed class Cidr
         return candidate.SequenceEqual(network);
     }
 
+    public bool Overlaps(Cidr other)
+    {
+        if (other.Network.AddressFamily != Network.AddressFamily)
+            return false;
+
+        // CIDR networks overlap whenever either network address falls inside the
+        // other network. This covers equal networks as well as parent/child ranges.
+        return Contains(other.Network) || other.Contains(Network);
+    }
+
     public override string ToString() => $"{Network}/{PrefixLength}";
 
     public static string FromAddressAndPrefix(IPAddress address, int prefixLength)
