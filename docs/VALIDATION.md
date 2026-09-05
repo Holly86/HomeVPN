@@ -45,4 +45,6 @@ The user confirmed basic operation of the one required VPN connection and explic
 
 ## Deferred validation
 
-Final installer autostart cleanup and settings reset, tray interactions, and the additional DNS live checks remain deferred. Pushed-branch CI is recorded below. A real Windows logoff/reboot, physical network switch and two separate live remote peers have not been tested. Startup command, override restart behavior and policy/network-change unit cases are separately evidenced above. Unsigned development installers are not a signed production release.
+Subsequently, the user installed 0.2.6, configured their home DNS and explicitly confirmed successful local-name resolution in daily use. This establishes user-reported real split-DNS success for that connection; it does not establish abnormal cleanup, all DNS paths, Group Policy behavior or reboot coverage. The remaining work and acceptance gates are tracked in [RELEASE-PLAN.md](RELEASE-PLAN.md).
+
+Final installer autostart cleanup and settings reset, tray interactions, and the remaining DNS live checks remain deferred. Both [push CI](https://github.com/Holly86/HomeVPN/actions/runs/33983822857) and [PR CI](https://github.com/Holly86/HomeVPN/actions/runs/33983851766) passed for implementation commit 52b5285. A real Windows logoff/reboot, physical network switch and two separate live remote peers have not been tested. Startup command, override restart behavior and policy/network-change unit cases are separately evidenced above. Unsigned development installers are not a signed production release.

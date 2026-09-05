@@ -41,6 +41,8 @@ For managed checks only: dotnet test HomeVPN.sln -c Release. The test-only Visua
 
 ## Maintenance
 
+The prioritized path to a stable release is documented in the [release plan](docs/RELEASE-PLAN.md), including acceptance criteria and the safe removal of a parallel WireGuard installation. Its uninstaller can remove HomeVPN tunnel services because they share the upstream-required service prefix; follow the planned repair/migration procedure before removing it.
+
 Setup offers repair/removal. The profile retention checkbox defaults to keeping encrypted profiles for reinstall. Unchecked removes HomeVPN-owned protected configuration only. For unattended removal use KEEP_PROFILES=0 explicitly. Services are recreated as demand start during reinstall; no connection begins before user policy evaluation.
 
 Current validation and remaining manual acceptance work are documented in docs/VALIDATION.md. Local development packages are unsigned; production signing requires the project owner's certificate and is not fabricated.
