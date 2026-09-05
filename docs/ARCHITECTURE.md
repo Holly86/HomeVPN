@@ -41,19 +41,19 @@ Policy precedence for each profile:
 3. Matching excluded network + no current-session override -> off.
 4. Matching excluded network + allowed manual override -> on after explicit user action.
 5. Otherwise apply desired state.
+6. Global route arbitration may still pause a profile when another active profile owns an incompatible route.
 
 A network change invalidates all session overrides.
 
 ## Parallel tunnel rules
 
-- Multiple **Home-only** profiles may run in parallel.
-- A **Full-Tunnel** profile is exclusive.
+- Multiple **Home-only** profiles may run in parallel when their target CIDRs do not overlap.
+- HomeVPN detects equal and parent/child CIDR overlaps before starting services. When split-tunnel routes overlap, the currently selected profile wins, then the Standard-VPN, then profile order; conflicting profiles receive `RouteConflict` and stay stopped.
+- A **Full-Tunnel** profile is exclusive because `/0` routing and WireGuard-for-Windows kill-switch semantics should not compete with another managed tunnel.
 - When more than one desired profile requests Full-Tunnel, the currently selected profile wins, then the Standard-VPN, then profile order.
-- Other desired profiles receive a `RouteConflict` effective state until the Full-Tunnel profile is stopped or changed back to Home-only.
+- Other desired profiles receive a `RouteConflict` effective state until the route owner is stopped or its mode changes.
 
-This avoids competing `0.0.0.0/0` / `::/0` routes and multiple simultaneous WireGuard-for-Windows full-tunnel kill-switch policies.
-
-Overlapping Home-only target networks remain an operational consideration; a future route-conflict analyzer can warn before enabling two overlapping profiles.
+This allows, for example, a Home tunnel and a Parents tunnel to run simultaneously when their target networks are distinct, while safely avoiding the very common FRITZ!Box case where both locations still use the same default private subnet.
 
 ## Two service variants per imported profile
 
