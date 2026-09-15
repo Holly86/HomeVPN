@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><TargetFramework>net8.0-windows10.0.19041.0</TargetFramework><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable><AllowUnsafeBlocks>true</AllowUnsafeBlocks></PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../HomeVpn.App/Models/*.cs" Link="Models/%(Filename)%(Extension)" />
+    <Compile Include="../HomeVpn.App/Core/*.cs" Link="Core/%(Filename)%(Extension)" />
+    <Compile Include="../HomeVpn.App/Infrastructure/WireGuardConfig.cs" Link="WireGuardConfig.cs" />
+    <Compile Include="../HomeVpn.App/Infrastructure/WindowsServiceManager.cs" Link="WindowsServiceManager.cs" />
+    <Compile Include="../HomeVpn.App/Infrastructure/ProcessRunner.cs" Link="ProcessRunner.cs" />
+  </ItemGroup>
+</Project>

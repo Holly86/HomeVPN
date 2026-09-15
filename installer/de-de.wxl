@@ -1,0 +1,67 @@
+<!-- Copyright (c) .NET Foundation and contributors. All rights reserved. Licensed under the Microsoft Reciprocal License. See LICENSE.TXT file in the project root for full license information. -->
+<WixLocalization Culture="de-de" Language="1031" xmlns="http://wixtoolset.org/schemas/v4/wxl">
+  <String Id="Caption" Value="[WixBundleName] Setup" />
+  <String Id="Title" Value="[WixBundleName]" />
+  <String Id="CheckingForUpdatesLabel" Value="Checking for updates" />
+  <String Id="UpdateButton" Value="&amp;Update to version [WixStdBAUpdateAvailable]" />
+  <String Id="InstallHeader" Value="Welcome" />
+  <String Id="InstallMessage" Value="Setup will install [WixBundleName] on your computer. Click Install to continue or Cancel to exit." />
+  <String Id="InstallMessageOptions" Value="Setup will install [WixBundleName] on your computer. Click Install to continue, Options to set installation options, or Cancel to exit." />
+  <String Id="InstallVersion" Value="Version [WixBundleVersion]" />
+  <String Id="ConfirmCancelMessage" Value="Möchten Sie die Einrichtung abbrechen?" />
+  <String Id="ExecuteUpgradeRelatedBundleMessage" Value="Previous version" />
+  <String Id="HelpHeader" Value="Setup Help" />
+  <String Id="HelpText" Value="/install | /repair | /uninstall | /layout [directory] - installs, repairs, uninstalls or&#xA;   creates a complete local copy of the bundle in directory. Install is the default.&#xA;&#xA;/passive | /quiet -  displays minimal UI with no prompts or displays no UI and&#xA;   no prompts. By default UI and all prompts are displayed.&#xA;&#xA;/norestart   - suppress any attempts to restart. By default UI will prompt before restart.&#xA;/log log.txt - logs to a specific file. By default a log file is created in %TEMP%." />
+  <String Id="HelpCloseButton" Value="&amp;Close" />
+  <String Id="InstallLicenseLinkText" Value="[WixBundleName] &lt;a href=&quot;#&quot;&gt;Lizenzbedingungen&lt;/a&gt;." />
+  <String Id="InstallAcceptCheckbox" Value="Ich stimme den Lizenzbedingungen zu" />
+  <String Id="InstallOptionsButton" Value="&amp;Options" />
+  <String Id="InstallInstallButton" Value="Installieren" />
+  <String Id="InstallCancelButton" Value="Abbrechen" />
+  <String Id="OptionsHeader" Value="Setup Options" />
+  <String Id="OptionsLocationLabel" Value="Install location:" />
+  <String Id="OptionsBrowseButton" Value="&amp;Browse" />
+  <String Id="OptionsOkButton" Value="&amp;OK" />
+  <String Id="OptionsCancelButton" Value="&amp;Cancel" />
+  <String Id="ProgressHeader" Value="Installation" />
+  <String Id="ProgressLabel" Value="Schritt:" />
+  <String Id="OverallProgressPackageText" Value="Vorbereitung …" />
+  <String Id="ProgressCancelButton" Value="Abbrechen" />
+  <String Id="ModifyHeader" Value="HomeVPN verwalten" />
+  <String Id="ModifyRepairButton" Value="Reparieren" />
+  <String Id="ModifyUninstallButton" Value="Entfernen" />
+  <String Id="ModifyCancelButton" Value="Schließen" />
+  <String Id="SuccessHeader" Value="Setup abgeschlossen" />
+  <String Id="SuccessCacheHeader" Value="Cache Successfully Completed" />
+  <String Id="SuccessInstallHeader" Value="Installation abgeschlossen" />
+  <String Id="SuccessLayoutHeader" Value="Layout Successfully Completed" />
+  <String Id="SuccessModifyHeader" Value="Änderung abgeschlossen" />
+  <String Id="SuccessRepairHeader" Value="Reparatur abgeschlossen" />
+  <String Id="SuccessUninstallHeader" Value="HomeVPN entfernt" />
+  <String Id="SuccessUnsafeUninstallHeader" Value="HomeVPN entfernt" />
+  <String Id="SuccessLaunchButton" Value="Starten" />
+  <String Id="SuccessRestartText" Value="Bitte starten Sie Windows neu, bevor Sie HomeVPN verwenden." />
+  <String Id="SuccessUninstallRestartText" Value="Bitte starten Sie Windows neu, um die Deinstallation abzuschließen." />
+  <String Id="SuccessRestartButton" Value="Neustart" />
+  <String Id="SuccessCloseButton" Value="Schließen" />
+  <String Id="FailureHeader" Value="Setup fehlgeschlagen" />
+  <String Id="FailureCacheHeader" Value="Cache Failed" />
+  <String Id="FailureInstallHeader" Value="Installation fehlgeschlagen" />
+  <String Id="FailureLayoutHeader" Value="Layout Failed" />
+  <String Id="FailureModifyHeader" Value="Änderung fehlgeschlagen" />
+  <String Id="FailureRepairHeader" Value="Reparatur fehlgeschlagen" />
+  <String Id="FailureUninstallHeader" Value="Deinstallation fehlgeschlagen" />
+  <String Id="FailureUnsafeUninstallHeader" Value="Uninstall Failed" />
+  <String Id="FailureHyperlinkLogText" Value="Bitte prüfen Sie die &lt;a href=&quot;#&quot;&gt;Protokolldatei&lt;/a&gt; und versuchen Sie es erneut." />
+  <String Id="FailureRestartText" Value="Windows muss neu gestartet werden, um die Wiederherstellung abzuschließen." />
+  <String Id="FailureRestartButton" Value="Neustart" />
+  <String Id="FailureCloseButton" Value="Schließen" />
+  <String Id="FilesInUseTitle" Value="Dateien werden verwendet" />
+  <String Id="FilesInUseLabel" Value="Diese Anwendungen verwenden zu aktualisierende Dateien:" />
+  <String Id="FilesInUseNetfxCloseRadioButton" Value="Anwendungen schließen." />
+  <String Id="FilesInUseCloseRadioButton" Value="Anwendungen schließen und danach neu starten." />
+  <String Id="FilesInUseDontCloseRadioButton" Value="Anwendungen geöffnet lassen. Ein Neustart wird erforderlich." />
+  <String Id="FilesInUseRetryButton" Value="Erneut versuchen" />
+  <String Id="FilesInUseIgnoreButton" Value="Ignorieren" />
+  <String Id="FilesInUseExitButton" Value="Beenden" />
+</WixLocalization>

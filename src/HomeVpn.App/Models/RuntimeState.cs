@@ -8,6 +8,7 @@ public enum PolicyReason
     ExcludedNetwork,
     ManualOverride,
     RouteConflict,
+    MigrationRequired,
     Normal
 }
 

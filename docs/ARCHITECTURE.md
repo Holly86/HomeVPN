@@ -1,105 +1,37 @@
 # Architecture
 
-HomeVPN is a small Windows policy/controller layer around WireGuard tunnel runtimes.
-The current runtime backend controls the official WireGuard for Windows tunnel services. A future backend can use the official embeddable WireGuard tunnel library without changing the user-facing profile/policy model.
+## Boundaries
 
-## Multiple profile model
+HomeVpn.App owns WPF/tray, normal-user metadata, network detection and policy orchestration. HomeVpn.Runtime owns strict config parsing, identity, protected storage, provisioning, SCM control and diagnostics. HomeVpn.TunnelService is a dedicated LocalSystem process alongside Runtime/x64/tunnel.dll and wireguard.dll.
 
-A VPN connection is never hardcoded as `Home`.
+ITunnelController exposes query/start/stop. ITunnelProvisioner handles elevated create/remove. PolicyPlanner is pure; PolicyTransition applies all stops before starts and blocks starts on any failed stop. The background engine serializes commands, suspends during provisioning, and publishes desired/effective/reason snapshots to the UI dispatcher.
 
-Each imported profile contains:
+## Import transaction
 
-- stable `Id`
-- user-facing `DisplayName`
-- technical `HomeTunnelName` and `FullTunnelName`
-- Home-only target CIDRs
-- per-profile desired ON/OFF state
-- per-profile routing mode
-- runtime backend identifier
+GUI parses the selected local file in memory, collects name/remote CIDRs, suspends policy, then creates a random first-instance named pipe with an explicit account-SID DACL. It launches the installed executable via runas with only the pipe name. The server verifies the elevated client PID before sending any configuration; the helper verifies the server owner against its TokenUser SID. Identification-level client impersonation prevents a server from impersonating the elevated client for privileged operations. Frames are length bounded and transient byte arrays are zeroed.
 
-Global settings contain:
+The helper verifies pinned native hashes, validates input again, creates an immutable GUID, encrypts two variants, creates manual services, sets minimal control ACLs and records ownership in the protected directory. Failed provisioning rolls back only resources created by that attempt. The split-only diagnostic returns separate runtime/service/adapter/route/handshake results. The GUI persists returned metadata and keeps new desired state off until explicit activation.
 
-- `PrimaryProfileId` – the Standard-VPN
-- `SelectedProfileId` – the profile currently controlled by the main UI/tray
-- list of profiles
-- global and profile-scoped excluded-network rules
+.NET 8 CurrentUserOnly compares TokenOwner, which changes under UAC; HomeVPN uses explicit TokenUser ownership instead. The real initial pipe failure and correction are recorded in VALIDATION.md.
 
-The first imported profile becomes the Standard-VPN by default. Any later import can explicitly become the new Standard-VPN.
+## Identity and authority
 
-## Runtime state
+Upstream requires WireGuardTunnel$ plus the configuration basename. HomeVPN uses HVPN + full 128-bit GUID base32 + S/F (31 characters). Service executable paths are quoted and contain only a GUID and mode. No arbitrary path or display name is accepted by the service host. The host verifies LocalSystem, its installed location, protected owner record and matching SCM BinaryPath.
 
-For every profile HomeVPN keeps separate concepts:
+Machine ownership metadata is authoritative for service deletion/restoration. User-editable JSON does not grant provisioning authority. Old backend profiles are display/migration-only. Separate foreign WireGuard installations are not dependencies and are not modified by policy or maintenance.
 
-- **Desired state**: whether the user wants this profile enabled in general.
-- **Effective state**: whether current network/routing policy permits this profile to run.
-- **Session override**: an in-memory override for one excluded network session. It is never persisted.
+## Secrets and lifecycle
 
-Policy precedence for each profile:
+See UPSTREAM-PINS.md for the exact native lifecycle. The persistent .conf.dpapi is passed directly to upstream; there is no plaintext-file lifetime to race. SYSTEM/Administrators-only parent directories protect atomic temporary writes and upstream ringlogger. The GUI never reads encrypted files or ringlogger; it receives sanitized diagnostic scalars through the setup pipe.
 
-1. User explicitly disabled this profile -> off.
-2. No usable physical network -> off.
-3. Matching excluded network + no current-session override -> off.
-4. Matching excluded network + allowed manual override -> on after explicit user action.
-5. Otherwise apply desired state.
-6. Global route arbitration may still pause a profile when another active profile owns an incompatible route.
+## Optional split DNS
 
-A network change invalidates all session overrides.
+Split DNS is configured per profile through a bounded elevated setup request. Protected DNS metadata is independent of key material. A SYSTEM companion tracks the split host lifetime and adapter state, applies only GUID/tag-owned NRPT namespace rules, and removes them on disconnect. Physical adapter DNS is unchanged; full mode retains imported DNS. See SPLIT-DNS.md for policy arbitration, lifetime, ownership and deferred live checks.
 
-## Parallel tunnel rules
+## Installer
 
-- Multiple **Home-only** profiles may run in parallel when their target CIDRs do not overlap.
-- HomeVPN detects equal and parent/child CIDR overlaps before starting services. When split-tunnel routes overlap, the currently selected profile wins, then the Standard-VPN, then profile order; conflicting profiles receive `RouteConflict` and stay stopped.
-- A **Full-Tunnel** profile is exclusive because `/0` routing and WireGuard-for-Windows kill-switch semantics should not compete with another managed tunnel.
-- When more than one desired profile requests Full-Tunnel, the currently selected profile wins, then the Standard-VPN, then profile order.
-- Other desired profiles receive a `RouteConflict` effective state until the route owner is stopped or its mode changes.
+WiX 5 MSI performs per-machine x64 installation with a Burn bootstrapper. The service host and both DLLs are colocated because upstream loads wireguard.dll from APPLICATION_DIR | SYSTEM32. Dynamic profile services are maintained through a bundled deferred, non-impersonated maintenance executable. Upgrade removes only verified owned services before replacing files and restores demand-start services afterwards; rollback schedules restoration. Final uninstall can preserve encrypted profiles or purge them. Autostart cleanup is separate from upgrade service removal.
 
-This allows, for example, a Home tunnel and a Parents tunnel to run simultaneously when their target networks are distinct, while safely avoiding the very common FRITZ!Box case where both locations still use the same default private subnet.
+## Limits
 
-## Two service variants per imported profile
-
-An imported single-peer WireGuard configuration is used to derive two local configurations:
-
-- `<name>`: Home-only split tunnel. `AllowedIPs` is replaced with the configured target CIDRs.
-- `<name>-Full`: Full tunnel. `AllowedIPs` is replaced with `0.0.0.0/0` and, when the imported profile contains IPv6, `::/0`.
-
-Both variants retain the same interface key, peer public key, endpoint, DNS and other imported settings.
-
-### Current backend: official WireGuard for Windows
-
-The temporary plaintext variants are copied into WireGuard for Windows' official configuration store while the `WireGuardManager` service is running. The official manager encrypts them as LocalSystem into `.conf.dpapi` files and deletes the plaintext copies. HomeVPN then installs the tunnel services from those protected files and removes its own staging directory. HomeVPN stores only metadata in `%LOCALAPPDATA%\HomeVPN\settings.json`.
-
-### Planned backend: embedded WireGuard
-
-The upstream-recommended `embeddable-dll-service` lets HomeVPN host WireGuard tunnel services itself using `tunnel.dll` plus `wireguard.dll`. This removes the dependency on the separately installed WireGuard Windows client while retaining the Windows-service model. See `EMBEDDED-WIREGUARD.md`.
-
-## Privilege model
-
-Normal operation runs without elevation.
-
-One elevated import/setup step for the current backend:
-
-1. Installs/replaces the two WireGuard tunnel services for that profile.
-2. Sets both services to `demand` start.
-3. Grants the importing Windows user's SID only the service rights needed to query/start/stop/interrogate those two services (`LCRPWPLO`).
-4. Stops both services so the policy engine determines the effective state.
-
-Each additional imported profile receives its own scoped service ACLs.
-
-The app does not grant `SERVICE_CHANGE_CONFIG` and does not use WireGuard PreUp/PostUp scripts.
-
-## Network detection
-
-- Physical LAN/WLAN adapters are discovered using `System.Net.NetworkInformation`.
-- Common virtual/tunnel adapters are excluded from policy matching.
-- Connected Wi-Fi SSID and the Wi-Fi security-enabled flag are read via the native Windows WLAN API (`wlanapi.dll`).
-- Exclusion rules can match network name/SSID, local subnet CIDR, or both. If both are set, both must match.
-- `*` and `?` wildcards are accepted in network-name patterns.
-- Rules can be global or scoped to specific profile IDs.
-
-Unknown Wi-Fi while the selected VPN is manually off produces a recommendation. An unencrypted Wi-Fi produces a stronger warning.
-
-## Startup
-
-The published single-file executable copies itself to `%LOCALAPPDATA%\Programs\HomeVPN\HomeVPN.exe` on first launch and relaunches from there. Autostart is per-user via `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`.
-
-Tunnel services themselves remain manual-start services. This prevents Windows from reconnecting a tunnel before HomeVPN has evaluated the current network and all profile policies.
+One-peer configurations only; x64 only. Same-account UAC is required. GUI “connected” means service Running, not a continuously verified peer handshake. Handshake diagnostics require elevation and run during setup/retry. Dynamic user-profile discovery and offline-user autostart/metadata cleanup need explicit validation; see the acceptance matrix.

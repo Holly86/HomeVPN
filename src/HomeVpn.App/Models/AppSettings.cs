@@ -14,6 +14,8 @@ public enum TunnelBackendKind
 
 public sealed class AppSettings
 {
+    public int SchemaVersion { get; set; } = 2;
+    public string? SettingsGeneration { get; set; }
     public bool StartWithWindows { get; set; } = true;
     public Guid? PrimaryProfileId { get; set; }
     public Guid? SelectedProfileId { get; set; }
@@ -49,20 +51,35 @@ public sealed class AppSettings
     }
 }
 
-public sealed class VpnProfile
+public sealed class VpnProfile : System.ComponentModel.INotifyPropertyChanged
 {
-    public Guid Id { get; set; } = Guid.NewGuid();
-    public string DisplayName { get; set; } = "Home";
+    public Guid Id { get; init; } = Guid.NewGuid();
+    private string _displayName = "VPN";
+    public string DisplayName
+    {
+        get => _displayName;
+        set { if (_displayName == value) return; _displayName = value; PropertyChanged?.Invoke(this, new(nameof(DisplayName))); }
+    }
+    public event System.ComponentModel.PropertyChangedEventHandler? PropertyChanged;
     public string HomeTunnelName { get; set; } = "Home";
     public string FullTunnelName { get; set; } = "Home-Full";
     public List<string> HomeCidrs { get; set; } = [];
+    public SplitDnsSettings SplitDns { get; set; } = new();
     public DateTimeOffset ImportedAt { get; set; } = DateTimeOffset.UtcNow;
     public bool DesiredVpnEnabled { get; set; }
     public RoutingMode RoutingMode { get; set; } = RoutingMode.HomeOnly;
     public TunnelBackendKind Backend { get; set; } = TunnelBackendKind.OfficialWireGuard;
 
-    public string HomeServiceName => $"WireGuardTunnel${HomeTunnelName}";
-    public string FullServiceName => $"WireGuardTunnel${FullTunnelName}";
+    public string HomeServiceName => Backend == TunnelBackendKind.EmbeddedWireGuard ? HomeVpn.Infrastructure.TunnelIdentity.Service(Id, RoutingMode.HomeOnly) : $"WireGuardTunnel${HomeTunnelName}";
+    public string FullServiceName => Backend == TunnelBackendKind.EmbeddedWireGuard ? HomeVpn.Infrastructure.TunnelIdentity.Service(Id, RoutingMode.FullTunnel) : $"WireGuardTunnel${FullTunnelName}";
+}
+
+public sealed class SplitDnsSettings
+{
+    public string Server { get; set; } = "";
+    public List<string> Domains { get; set; } = [];
+    [System.Text.Json.Serialization.JsonIgnore]
+    public bool Enabled => !string.IsNullOrWhiteSpace(Server);
 }
 
 public sealed class ExcludedNetworkRule
